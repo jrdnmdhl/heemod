@@ -910,9 +910,9 @@ shinyServer(function(input, output, session) {
 #   })
 #   observe(print(values$nTimedepNonConstant))
   
-  observe(
-    values$survivalDistribution <- input[[paste0("survivalEditDistribution", values$nSurvival)]] #becomes NULL when input$survivalOK clicked
-  )
+  # observe(
+  #   values$survivalDistribution <- input[[paste0("survivalEditDistribution", values$nSurvival)]] #becomes NULL when input$survivalOK clicked
+  # )
   
   
   output$allModules <- renderUI({
@@ -932,7 +932,7 @@ shinyServer(function(input, output, session) {
                  column(2, numericInput(paste0("rghoStartAge",i), NULL, ifelse(is.null(input[[paste0("rghoStartAge", i)]]), input[[paste0("rghoEditStartAge", i-1)]], input[[paste0("rghoStartAge", i)]]))),
                  column(2, renderUI(searchRegion(paste0("rghoRegion", i), input[[paste0("rghoEditRegion", i-1)]]))),
                  column(2, renderUI(searchCountry(paste0("rghoCountry", i), paste0("rghoRegion", i), input[[paste0("rghoEditRegion", i-1)]], input[[paste0("rghoEditCountry", i-1)]]))),
-                 column(2, radioButtons(paste0("rghoGender",i), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = ifelse(is.null(input[[paste0("rghoGender", i)]]), input[[paste0("rghoEditGender", i-1)]], input[[paste0("rghoGender", i)]])))
+                 column(2, selectInput(paste0("rghoGender",i), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = ifelse(is.null(input[[paste0("rghoGender", i)]]), input[[paste0("rghoEditGender", i-1)]], input[[paste0("rghoGender", i)]])))
         )
       })
     )
@@ -940,7 +940,7 @@ shinyServer(function(input, output, session) {
       lapply(seq_len(values$nSurvival), function(i){
         fluidRow(class = "row-eq-height",
                  column(2, textInput(paste0("survivalName", i), NULL, ifelse(is.null(input[[paste0("survivalName", i)]]), isolate(input[[paste0("survivalEditName", i-1)]]), input[[paste0("survivalName", i)]]))),
-                 column(2, radioButtons(paste0("survivalDistribution", i), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (is.null(input[[paste0("survivalDistribution", i)]]), isolate(input[[paste0("survivalEditDistribution", i-1)]]), input[[paste0("survivalDistribution", i)]]))),
+                 column(2, selectInput(paste0("survivalDistribution", i), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (is.null(input[[paste0("survivalDistribution", i)]]), isolate(input[[paste0("survivalEditDistribution", i-1)]]), input[[paste0("survivalDistribution", i)]]))),
                  column(2, (numericInput(paste0("survivalLambda", i), NULL, ifelse(is.null(input[[paste0("survivalLambda", i)]]), isolate(input[[paste0("survivalEditLambda", i-1)]]), input[[paste0("survivalLambda", i)]])))),
           if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull" | isolate({!is.null(values[[paste0("survivalEditDistribution", i-1)]]) && values[[paste0("survivalEditDistribution", i-1)]] == "Weibull"}))
             column(2, (numericInput(paste0("survivalK", i), NULL, ifelse(!is.null(input[[paste0("survivalK", i)]]), input[[paste0("survivalK", i)]], 
@@ -953,7 +953,7 @@ shinyServer(function(input, output, session) {
       lapply(seq_len(values$nTimedep), function(i){
         fluidRow(class = "row-eq-height",
                  column(2, textInput(paste0("timedepName", i), NULL, ifelse(is.null(input[[paste0("timedepName", i)]]), isolate(input[[paste0("timedepEditName", i-1)]]), input[[paste0("timedepName", i)]]))),
-                 column(2, radioButtons(paste0("timedepType", i), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected=ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]]))),
+                 column(2, selectInput(paste0("timedepType", i), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected=ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]]))),
                  column(2, textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), isolate(input[[paste0("timedepEditValueC", i-1)]]), input[[paste0("timedepValueC", i)]])))
         )
       })
@@ -977,7 +977,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$survivalOK, {
     hide("editingSurvival")
     values$nSurvival <- values$nSurvival + 1
-    values$survivalDistribution <- NULL
+    #values$survivalDistribution <- NULL
   })
   observeEvent(input$timedepOK, {
     hide("editingTimeDep")
