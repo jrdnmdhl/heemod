@@ -3,6 +3,14 @@ shinyUI(
   fluidPage(
     lang = "en-US",
     useShinyjs(),
+    inlineCSS(list(
+      ".row-eq-height"  = c(
+        "display: -webkit-box",
+        "display: -webkit-flex",
+        "display: -ms-flexbox",
+        "display: flex"
+      )
+    )),
     navbarPage(
       "heemod",
       id = "main",

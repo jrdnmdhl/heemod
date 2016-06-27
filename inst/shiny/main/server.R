@@ -1,5 +1,6 @@
 source("interface.R")
 library(dplyr)
+library(Hmisc)
 library(heemod)
 library(rgho)
 
@@ -18,10 +19,27 @@ MODULES <- c(
   "Time-dependant variable" = "timedep"
 )
 
+
 shinyServer(function(input, output, session) {
-  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRGHO = 0, nSurvival = 0, nTimedep = 0, nTimedepNC = 1)
+  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nTimedepNC = 1)
   loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables=0, nameStrategies = 0)
   tmp <- reactiveValues(showStateParam = NULL)
+  
+  show_modules <- function(module, titles, values){
+    val <- paste0("n", upFirst(module))
+    if (values[[val]] > 0){
+      tagList(
+        h4(names(which(MODULES == module))),
+        fluidRow(class = "row-eq-height",
+                 column(2, strong("Name")),
+                 lapply(titles, function(x){
+                   column(2, strong(x))
+                 })
+        ),
+        get(module, envir = parent.frame())
+      )
+    }
+  }
   
   showStateParam <- function(nbStrat, input, values, click) {
     nbStates <- input$nbStates
@@ -716,22 +734,22 @@ shinyServer(function(input, output, session) {
     observeEvent(input[[module]], {
       if (module == "equation"){
         hide("editingSurvival")
-        hide("editingRGHO")
+        hide("editingRgho")
         hide("editingTimedep")
         shinyjs::show("editingEquation")
       } else if (module == "rgho"){
         hide("editingSurvival")
         hide("editingEquation")
         hide("editingTimedep")
-        shinyjs::show("editingRGHO")
+        shinyjs::show("editingRgho")
       } else if (module == "survival"){
         hide("editingEquation")
-        hide("editingRGHO")
+        hide("editingRgho")
         hide("editingTimedep")
         shinyjs::show("editingSurvival")
       } else if (module == "timedep"){
         hide("editingEquation")
-        hide("editingRGHO")
+        hide("editingRgho")
         hide("editingSurvival")
         shinyjs::show("editingTimedep")
       }
@@ -740,7 +758,7 @@ shinyServer(function(input, output, session) {
   
   output$addModule <- renderUI({
     nEquation <- values$nEquation
-    nRGHO <- values$nRGHO
+    nRgho<- values$nRgho
     nSurvival <- values$nSurvival
     nTimedep <- values$nTimedep
     tagList(
@@ -762,16 +780,16 @@ shinyServer(function(input, output, session) {
     ),
     hidden(
       wellPanel(
-        id = "editingRGHO",
-        textInput(paste0("rghoEditName", nRGHO), "Variable Name", ""),
-        numericInput(paste0("rghoEditStartAge", nRGHO), "Age at beginning", 0),
+        id = "editingRgho",
+        textInput(paste0("rghoEditName", nRgho), "Variable Name", ""),
+        numericInput(paste0("rghoEditStartAge", nRgho), "Age at beginning", 0),
         radioButtons(
-          paste0("rghoEditGender", nRGHO),
+          paste0("rghoEditGender", nRgho),
           "Sex",
           choices = c(Female = "FMLE", Male = "MLE")
         ),
-        renderUI(searchRegion(paste0("rghoEditRegion", nRGHO), input[[paste0("rghoEditRegion", nRGHO)]])),
-        renderUI(searchCountry(paste0("rghoEditCountry", nRGHO), paste0("rghoEditRegion", nRGHO), input[[paste0("rghoEditRegion", nRGHO)]], input[[paste0("rghoEditCountry", nRGHO)]])),
+        renderUI(searchRegion(paste0("rghoEditRegion", nRgho), input[[paste0("rghoEditRegion", nRgho)]])),
+        renderUI(searchCountry(paste0("rghoEditCountry", nRgho), paste0("rghoEditRegion", nRgho), input[[paste0("rghoEditRegion", nRgho)]], input[[paste0("rghoEditCountry", nRgho)]])),
         actionButton("rghoOK", "OK")
       )
     ),
@@ -898,33 +916,34 @@ shinyServer(function(input, output, session) {
   
   
   output$allModules <- renderUI({
-    equations <- tagList(
+    equation <- tagList(
       lapply(seq_len(values$nEquation), function(i){
-        tags$tr(
-          tags$td(textInput(paste0("equationName", i), NULL, ifelse(is.null(input[[paste0("equationName", i)]]), input[[paste0("equationEditName", i-1)]], input[[paste0("equationName", i)]]))),
-          tags$td(textInput(paste0("equationValue", i), NULL, ifelse(is.null(input[[paste0("equationValue", i)]]), input[[paste0("equationEditValue", i-1)]], input[[paste0("equationValue", i)]])))
+        fluidRow(class = "row-eq-height",
+            column(2, textInput(paste0("equationName", i), NULL, ifelse(is.null(input[[paste0("equationName", i)]]), input[[paste0("equationEditName", i-1)]], input[[paste0("equationName", i)]]))),
+            column(2, textInput(paste0("equationValue", i), NULL, ifelse(is.null(input[[paste0("equationValue", i)]]), input[[paste0("equationEditValue", i-1)]], input[[paste0("equationValue", i)]]))
+            )
         )
       })
     )
     rgho <- tagList(
-      lapply(seq_len(values$nRGHO), function(i){
-        tags$tr(
-          tags$td(textInput(paste0("rghoName", i), NULL, ifelse(is.null(input[[paste0("rghoName", i)]]), input[[paste0("rghoEditName", i-1)]], input[[paste0("rghoName", i)]]))),
-          tags$td(numericInput(paste0("rghoStartAge",i), NULL, ifelse(is.null(input[[paste0("rghoStartAge", i)]]), input[[paste0("rghoEditStartAge", i-1)]], input[[paste0("rghoStartAge", i)]]))),
-          tags$td(renderUI(searchRegion(paste0("rghoRegion", i), input[[paste0("rghoEditRegion", i-1)]]))),
-          tags$td(renderUI(searchCountry(paste0("rghoCountry", i), paste0("rghoRegion", i), input[[paste0("rghoEditRegion", i-1)]], input[[paste0("rghoEditCountry", i-1)]]))),
-          tags$td(radioButtons(paste0("rghoGender",i), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = ifelse(is.null(input[[paste0("rghoGender", i)]]), input[[paste0("rghoEditGender", i-1)]], input[[paste0("rghoGender", i)]])))
+      lapply(seq_len(values$nRgho), function(i){
+        fluidRow(class = "row-eq-height",
+                 column(2, textInput(paste0("rghoName", i), NULL, ifelse(is.null(input[[paste0("rghoName", i)]]), input[[paste0("rghoEditName", i-1)]], input[[paste0("rghoName", i)]]))),
+                 column(2, numericInput(paste0("rghoStartAge",i), NULL, ifelse(is.null(input[[paste0("rghoStartAge", i)]]), input[[paste0("rghoEditStartAge", i-1)]], input[[paste0("rghoStartAge", i)]]))),
+                 column(2, renderUI(searchRegion(paste0("rghoRegion", i), input[[paste0("rghoEditRegion", i-1)]]))),
+                 column(2, renderUI(searchCountry(paste0("rghoCountry", i), paste0("rghoRegion", i), input[[paste0("rghoEditRegion", i-1)]], input[[paste0("rghoEditCountry", i-1)]]))),
+                 column(2, radioButtons(paste0("rghoGender",i), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = ifelse(is.null(input[[paste0("rghoGender", i)]]), input[[paste0("rghoEditGender", i-1)]], input[[paste0("rghoGender", i)]])))
         )
       })
     )
     survival <- tagList(
       lapply(seq_len(values$nSurvival), function(i){
-        tags$tr(
-          tags$td(textInput(paste0("survivalName", i), NULL, ifelse(is.null(input[[paste0("survivalName", i)]]), isolate(input[[paste0("survivalEditName", i-1)]]), input[[paste0("survivalName", i)]]))),
-          tags$td(radioButtons(paste0("survivalDistribution", i), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (is.null(input[[paste0("survivalDistribution", i)]]), isolate(input[[paste0("survivalEditDistribution", i-1)]]), input[[paste0("survivalDistribution", i)]]))),
-          tags$td((numericInput(paste0("survivalLambda", i), NULL, ifelse(is.null(input[[paste0("survivalLambda", i)]]), isolate(input[[paste0("survivalEditLambda", i-1)]]), input[[paste0("survivalLambda", i)]])))),
+        fluidRow(class = "row-eq-height",
+                 column(2, textInput(paste0("survivalName", i), NULL, ifelse(is.null(input[[paste0("survivalName", i)]]), isolate(input[[paste0("survivalEditName", i-1)]]), input[[paste0("survivalName", i)]]))),
+                 column(2, radioButtons(paste0("survivalDistribution", i), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (is.null(input[[paste0("survivalDistribution", i)]]), isolate(input[[paste0("survivalEditDistribution", i-1)]]), input[[paste0("survivalDistribution", i)]]))),
+                 column(2, (numericInput(paste0("survivalLambda", i), NULL, ifelse(is.null(input[[paste0("survivalLambda", i)]]), isolate(input[[paste0("survivalEditLambda", i-1)]]), input[[paste0("survivalLambda", i)]])))),
           if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull" | isolate({!is.null(values[[paste0("survivalEditDistribution", i-1)]]) && values[[paste0("survivalEditDistribution", i-1)]] == "Weibull"}))
-            tags$td((numericInput(paste0("survivalK", i), NULL, ifelse(!is.null(input[[paste0("survivalK", i)]]), input[[paste0("survivalK", i)]], 
+            column(2, (numericInput(paste0("survivalK", i), NULL, ifelse(!is.null(input[[paste0("survivalK", i)]]), input[[paste0("survivalK", i)]], 
                                   ifelse(!is.null(isolate(input[[paste0("survivalEditK", i-1)]])), isolate(input[[paste0("survivalEditK", i-1)]]), "")))
           ))
         )
@@ -932,45 +951,18 @@ shinyServer(function(input, output, session) {
     )
     timedep <- tagList(
       lapply(seq_len(values$nTimedep), function(i){
-        tags$tr(
-          tags$td(textInput(paste0("timedepName", i), NULL, ifelse(is.null(input[[paste0("timedepName", i)]]), isolate(input[[paste0("timedepEditName", i-1)]]), input[[paste0("timedepName", i)]]))),
-          tags$td(radioButtons(paste0("timedepType", i), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected=ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]]))),
-          tags$td(textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), isolate(input[[paste0("timedepEditValueC", i-1)]]), input[[paste0("timedepValueC", i)]])))
-          
+        fluidRow(class = "row-eq-height",
+                 column(2, textInput(paste0("timedepName", i), NULL, ifelse(is.null(input[[paste0("timedepName", i)]]), isolate(input[[paste0("timedepEditName", i-1)]]), input[[paste0("timedepName", i)]]))),
+                 column(2, radioButtons(paste0("timedepType", i), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected=ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]]))),
+                 column(2, textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), isolate(input[[paste0("timedepEditValueC", i-1)]]), input[[paste0("timedepValueC", i)]])))
         )
       })
     )
     tagList(
-      if (values$nEquation > 0){
-        tagList(
-          h4(names(MODULES)[1]),
-          tags$table(tags$tr(tags$th("Name"), tags$th("Value")), equations)
-        )
-      },
-      if (values$nRGHO > 0){
-        tagList(
-          h4(names(MODULES)[2]),
-          tags$table(tags$tr(tags$th("Name"), tags$th("Age at beginning"), tags$th("Region"), tags$th("Country"), tags$th("Sex")), rgho)
-        )
-      },
-      if (values$nSurvival > 0){
-        tagList(
-          h4(names(MODULES)[3]),
-          tags$table(
-            tags$tr(tags$th("Name"), 
-                    tags$th("Distribution"), 
-                    tags$th("lambda"), 
-                    #if (!is.null(survivalK))
-                    tags$th("k"), 
-                    survival))
-        )
-      },
-      if (values$nTimedep > 0){
-        tagList(
-          h4(names(MODULES)[4]),
-          tags$table(tags$tr(tags$th("Name"), tags$th("Type")), timedep)
-        )
-      }
+      show_modules(module = "equation", titles = "Value", values),
+      show_modules(module = "rgho", titles = c("Age at beginning", "Region", "Country", "Sex"), values),
+      show_modules(module = "survival", titles = c("Distribution", "Lambda", "k"), values),
+      show_modules(module = "timedep", titles = "Type", values)
     )
   })
   
@@ -979,8 +971,8 @@ shinyServer(function(input, output, session) {
     values$nEquation <- values$nEquation + 1
   })
   observeEvent(input$rghoOK, {
-    hide("editingRGHO")
-    values$nRGHO <- values$nRGHO + 1
+    hide("editingRgho")
+    values$nRgho <- values$nRgho + 1
   })
   observeEvent(input$survivalOK, {
     hide("editingSurvival")
