@@ -700,12 +700,10 @@ shinyServer(function(input, output, session) {
       column(
         11,
         hidden(
-          tags$table(
+          fluidRow(
             id = "tabnewParam",
             lapply(seq_along(MODULES), function(i){
-              tags$tr(
-                tags$td(actionLink(MODULES[i], names(MODULES)[i]))
-              )
+              fluidRow(actionLink(MODULES[i], names(MODULES)[i]))
             })
           )
         )
