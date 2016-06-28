@@ -9,6 +9,19 @@ shinyUI(
         "display: -webkit-flex",
         "display: -ms-flexbox",
         "display: flex"
+      ),
+      ".rotateIcon" = c(
+        "-webkit-transition: 0.5s ease-in-out",
+        "-moz-transition: 0.5s ease-in-out",
+        "-o-transition: 0.5s ease-in-out",
+        "transition: 0.5s ease-in-out"
+      ),
+      ".rotateIcon:hover" = c(
+        "-webkit-transform: rotate(45deg)",
+        "-moz-transform: rotate(45deg)",
+        "-o-transform: rotate(45deg)",
+        "-ms-transform: rotate(45deg)",
+        "transform: rotate(45deg)"
       )
     )),
     navbarPage(

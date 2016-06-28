@@ -696,14 +696,17 @@ shinyServer(function(input, output, session) {
     fluidRow(
       column(
         1,
-        actionLink("newParam", "", icon("plus-circle", "fa-3x"))),
+        actionLink("newParam", "", icon("plus-circle", class="fa-3x rotateIcon")), style="margin-bottom:40px")
+      ,
       column(
         11,
         hidden(
           fluidRow(
             id = "tabnewParam",
             lapply(seq_along(MODULES), function(i){
-              fluidRow(actionLink(MODULES[i], names(MODULES)[i]))
+              fluidRow(
+                actionLink(MODULES[i], names(MODULES)[i])
+                )
             })
           )
         )
@@ -906,7 +909,6 @@ shinyServer(function(input, output, session) {
 #     if (k == values$nTimedepNonConstant)
 #       values$nTimedepNonConstant <- values$nTimedepNonConstant + 1 
 #   })
-   observe(print(values[[paste0("nTimedepNC", 0)]]))
   
   output$allModules <- renderUI({
     equation <- tagList(
