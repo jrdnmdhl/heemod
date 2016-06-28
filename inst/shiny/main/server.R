@@ -30,12 +30,13 @@ shinyServer(function(input, output, session) {
     if (values[[val]] > 0){
       tagList(
         h4(names(which(MODULES == module))),
+        if (!is.null(titles)){
         fluidRow(class = "row-eq-height",
                  column(2, strong("Name")),
-                 lapply(titles, function(x){
-                   column(2, strong(x))
-                 })
-        ),
+                   lapply(titles, function(x){
+                     column(2, strong(x))
+                   })
+        )},
         get(module, envir = parent.frame())
       )
     }
@@ -933,7 +934,7 @@ shinyServer(function(input, output, session) {
     )
     survival <- tagList(
       lapply(seq_len(values$nSurvival), function(i){
-        fluidRow(class = "row-eq-height",
+        tableBody <- fluidRow(class = "row-eq-height",
                  column(2, textInput(paste0("survivalName", i), NULL, ifelse(is.null(input[[paste0("survivalName", i)]]), isolate(input[[paste0("survivalEditName", i-1)]]), input[[paste0("survivalName", i)]]))),
                  column(2, selectInput(paste0("survivalDistribution", i), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (is.null(input[[paste0("survivalDistribution", i)]]), isolate(input[[paste0("survivalEditDistribution", i-1)]]), input[[paste0("survivalDistribution", i)]]))),
                  column(2, (numericInput(paste0("survivalLambda", i), NULL, ifelse(is.null(input[[paste0("survivalLambda", i)]]), isolate(input[[paste0("survivalEditLambda", i-1)]]), input[[paste0("survivalLambda", i)]])))),
@@ -942,47 +943,71 @@ shinyServer(function(input, output, session) {
                                   ifelse(!is.null(isolate(input[[paste0("survivalEditK", i-1)]])), isolate(input[[paste0("survivalEditK", i-1)]]), "")))
           ))
         )
+      tableTitle <- fluidRow(
+        column(2, strong("Name")), 
+        column(2, strong("Distribution")), 
+        column(2, strong("Lambda")),
+        if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull" | isolate({!is.null(values[[paste0("survivalEditDistribution", i-1)]]) && values[[paste0("survivalEditDistribution", i-1)]] == "Weibull"})){
+          tagList(
+            column(2, strong("k"))
+          )
+        }
+      )
+      return(list(tableTitle, tableBody))
       })
     )
     timedep <- tagList(
       lapply(seq_len(values$nTimedep), function(i){
-        fluidRow(class = "row-eq-height",
+        tableBody <- fluidRow(class = "row-eq-height",
                  column(2, textInput(paste0("timedepName", i), NULL, ifelse(is.null(input[[paste0("timedepName", i)]]), isolate(input[[paste0("timedepEditName", i-1)]]), input[[paste0("timedepName", i)]]))),
                  column(2, ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]])),
                  isolate({
                  if (!is.null(input[[paste0("timedepEditType", i-1)]]) && input[[paste0("timedepEditType", i-1)]] == "nonConstant"){
-                   column(12,
+                   column(6,
                      lapply(seq_len(values[[paste0("nTimedepNC", i-1)]]), function(j){
                        fluidRow(
-                         column(3,
-                                textInput(paste0("timedepValueNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepValueNC", i, j)]]), isolate(input[[paste0("timedepEditValueNC", i-1, j)]]), input[[paste0("timedepValueNC", i, j)]]))
+                         column(4,
+                                textInput(paste0("timedepValueNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepValueNC", i, j)]]), input[[paste0("timedepEditValueNC", i-1, j)]], input[[paste0("timedepValueNC", i, j)]]))
                          ),
-                         column(3,
-                                textInput(paste0("timedepStartNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepStartNC", i, j)]]), isolate(input[[paste0("timedepEditStartNC", i-1, j)]]), input[[paste0("timedepStartNC", i, j)]]))
+                         column(4,
+                                textInput(paste0("timedepStartNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepStartNC", i, j)]]), input[[paste0("timedepEditStartNC", i-1, j)]], input[[paste0("timedepStartNC", i, j)]]))
                          ),
-                         column(3,
-                                textInput(paste0("timedepEndNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepEndNC", i, j)]]), isolate(input[[paste0("timedepEditEndNC", i-1, j)]]), input[[paste0("timedepEndNC", i, j)]]))
+                         column(4,
+                                textInput(paste0("timedepEndNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepEndNC", i, j)]]), input[[paste0("timedepEditEndNC", i-1, j)]], input[[paste0("timedepEndNC", i, j)]]))
                          )
                        )
                       })
                    )
                  }
                  else if (!is.null(input[[paste0("timedepEditType", i-1)]]) && input[[paste0("timedepEditType", i-1)]] == "constant"){
-                     column(12,
+                    column(6,
                             fluidRow(
-                              column(3, textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), isolate(input[[paste0("timedepEditValueC", i-1)]]), input[[paste0("timedepValueC", i)]])))
+                              column(4, textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), input[[paste0("timedepEditValueC", i-1)]], input[[paste0("timedepValueC", i)]])))
                       )
                     )
                    }
-                 })
+                 })#,
+                 #column(2, actionLink(paste0("timedepNCDelete", i), icon("trash-o", "fa-2x")))
         )
+        tableTitle <- fluidRow(
+            column(2, strong("Name")), 
+            column(2, strong("Type")), 
+            column(2, strong("Value")),
+          if (!is.null(input[[paste0("timedepEditType", i-1)]]) && input[[paste0("timedepEditType", i-1)]] == "nonConstant"){
+            tagList(
+              column(2, strong("Start Cycle")),
+              column(2, strong("End Cycle"))
+            )
+          }
+        )
+        return(list(tableTitle, tableBody))
       })
     )
     tagList(
       show_modules(module = "equation", titles = "Value", values),
       show_modules(module = "rgho", titles = c("Age at beginning", "Region", "Country", "Sex"), values),
-      show_modules(module = "survival", titles = c("Distribution", "Lambda", "k"), values),
-      show_modules(module = "timedep", titles = c("Type", "Value", "Start Cycle", "End Cycle"), values)
+      show_modules(module = "survival", titles = NULL, values),
+      show_modules(module = "timedep", titles = NULL, values)
     )
   })
   
