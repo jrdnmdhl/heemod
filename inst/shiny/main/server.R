@@ -21,7 +21,7 @@ MODULES <- c(
 
 
 shinyServer(function(input, output, session) {
-  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nTimedepNC = 1)
+  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nTimedepNC0 = 1, nTimedepNC1 = 1)
   loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables=0, nameStrategies = 0)
   tmp <- reactiveValues(showStateParam = NULL)
   
@@ -864,30 +864,30 @@ shinyServer(function(input, output, session) {
                   textInput(paste0("timedepEditValueC", nTimedep), "Variation for each cycle", "") 
             )
             else if (input[[paste0("timedepEditType", nTimedep)]] == "nonConstant"){
-              # tagList(
-              #   tags$table(
-              #     tags$tr(
-              #       tags$th("Start Cycle"), 
-              #       tags$th("End Cycle"), 
-              #       tags$th("Value"),
-              #       tags$th("")
-              #     ),
-              #     lapply(seq_len(values$nTimedepNC), function(i){
-              #       isolate({
-              #       tags$tr(
-              #         tags$td(numericInput(paste0("timedepEditStartNC", i), "" , ifelse(i == 1, 1, 
-              #                                                                           ifelse(!is.null(input[[paste0("timedepEditEndNC", i-1)]]), input[[paste0("timedepEditEndNC", i-1)]] + 1 , 
-              #                                                                                 ifelse(!is.null(input[[paste0("timedepEditStartNC", i)]]), input[[paste0("timedepEditStartNC", i)]], ""))))),
-              #         tags$td(numericInput(paste0("timedepEditEndNC", i), "" , ifelse(!is.null(input[[paste0("timedepEditEndNC", i)]]), input[[paste0("timedepEditEndNC", i)]], ""))),
-              #         tags$td(numericInput(paste0("timedepEditValueNC", i),"" , ifelse(!is.null(input[[paste0("timedepEditValueNC", i)]]), input[[paste0("timedepEditValueNC", i)]], ""))),
-              #         tags$td(actionLink(paste0("timedepEditValueNCDelete", i), icon("trash-o", "fa-2x")))
-              #       )
-              #       })
-              #     })
-              #   ),
-              #   actionButton("timedepEditNewValueNC", "New value")
-              # )
-              div(class = "alert alert-warning", icon("exclamation-triangle"), "In construction")
+              tagList(
+                tags$table(
+                  tags$tr(
+                    tags$th("Start Cycle"),
+                    tags$th("End Cycle"),
+                    tags$th("Value"),
+                    tags$th("")
+                  ),
+                  lapply(seq_len(values[[paste0("nTimedepNC", values$nTimedep)]]), function(i){
+                    isolate({
+                    tags$tr(
+                      tags$td(numericInput(paste0("timedepEditStartNC", nTimedep, i), "" , ifelse(i == 1, 1,
+                                                                                        ifelse(!is.null(input[[paste0("timedepEditEndNC", nTimedep, i-1)]]), input[[paste0("timedepEditEndNC", nTimedep, i-1)]] + 1 ,
+                                                                                              ifelse(!is.null(input[[paste0("timedepEditStartNC", nTimedep, i)]]), input[[paste0("timedepEditStartNC", nTimedep, i)]], ""))))),
+                      tags$td(numericInput(paste0("timedepEditEndNC", nTimedep, i), "" , ifelse(!is.null(input[[paste0("timedepEditEndNC", nTimedep, i)]]), input[[paste0("timedepEditEndNC", nTimedep, i)]], ""))),
+                      tags$td(numericInput(paste0("timedepEditValueNC", nTimedep, i),"" , ifelse(!is.null(input[[paste0("timedepEditValueNC", nTimedep, i)]]), input[[paste0("timedepEditValueNC", nTimedep, i)]], "")))
+                      #tags$td(actionLink(paste0("timedepEditValueNCDelete", nTimedep, i), icon("trash-o", "fa-2x")))
+                    )
+                    })
+                  })
+                ),
+                actionButton("timedepEditNewValueNC", "New value")
+              )
+              #div(class = "alert alert-warning", icon("exclamation-triangle"), "In construction")
             }
             
           }
@@ -908,12 +908,7 @@ shinyServer(function(input, output, session) {
 #     if (k == values$nTimedepNonConstant)
 #       values$nTimedepNonConstant <- values$nTimedepNonConstant + 1 
 #   })
-#   observe(print(values$nTimedepNonConstant))
-  
-  # observe(
-  #   values$survivalDistribution <- input[[paste0("survivalEditDistribution", values$nSurvival)]] #becomes NULL when input$survivalOK clicked
-  # )
-  
+   observe(print(values[[paste0("nTimedepNC", 0)]]))
   
   output$allModules <- renderUI({
     equation <- tagList(
@@ -953,8 +948,33 @@ shinyServer(function(input, output, session) {
       lapply(seq_len(values$nTimedep), function(i){
         fluidRow(class = "row-eq-height",
                  column(2, textInput(paste0("timedepName", i), NULL, ifelse(is.null(input[[paste0("timedepName", i)]]), isolate(input[[paste0("timedepEditName", i-1)]]), input[[paste0("timedepName", i)]]))),
-                 column(2, selectInput(paste0("timedepType", i), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected=ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]]))),
-                 column(2, textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), isolate(input[[paste0("timedepEditValueC", i-1)]]), input[[paste0("timedepValueC", i)]])))
+                 column(2, ifelse(is.null(input[[paste0("timedepType", i)]]), isolate(input[[paste0("timedepEditType", i-1)]]), input[[paste0("timedepType", i)]])),
+                 isolate({
+                 if (!is.null(input[[paste0("timedepEditType", i-1)]]) && input[[paste0("timedepEditType", i-1)]] == "nonConstant"){
+                   column(12,
+                     lapply(seq_len(values[[paste0("nTimedepNC", i-1)]]), function(j){
+                       fluidRow(
+                         column(3,
+                                textInput(paste0("timedepValueNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepValueNC", i, j)]]), isolate(input[[paste0("timedepEditValueNC", i-1, j)]]), input[[paste0("timedepValueNC", i, j)]]))
+                         ),
+                         column(3,
+                                textInput(paste0("timedepStartNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepStartNC", i, j)]]), isolate(input[[paste0("timedepEditStartNC", i-1, j)]]), input[[paste0("timedepStartNC", i, j)]]))
+                         ),
+                         column(3,
+                                textInput(paste0("timedepEndNC", i, j), NULL, ifelse(is.null(input[[paste0("timedepEndNC", i, j)]]), isolate(input[[paste0("timedepEditEndNC", i-1, j)]]), input[[paste0("timedepEndNC", i, j)]]))
+                         )
+                       )
+                      })
+                   )
+                 }
+                 else if (!is.null(input[[paste0("timedepEditType", i-1)]]) && input[[paste0("timedepEditType", i-1)]] == "constant"){
+                     column(12,
+                            fluidRow(
+                              column(3, textInput(paste0("timedepValueC", i), NULL, ifelse(is.null(input[[paste0("timedepValueC", i)]]), isolate(input[[paste0("timedepEditValueC", i-1)]]), input[[paste0("timedepValueC", i)]])))
+                      )
+                    )
+                   }
+                 })
         )
       })
     )
@@ -962,7 +982,7 @@ shinyServer(function(input, output, session) {
       show_modules(module = "equation", titles = "Value", values),
       show_modules(module = "rgho", titles = c("Age at beginning", "Region", "Country", "Sex"), values),
       show_modules(module = "survival", titles = c("Distribution", "Lambda", "k"), values),
-      show_modules(module = "timedep", titles = "Type", values)
+      show_modules(module = "timedep", titles = c("Type", "Value", "Start Cycle", "End Cycle"), values)
     )
   })
   
@@ -982,24 +1002,10 @@ shinyServer(function(input, output, session) {
   observeEvent(input$timedepOK, {
     hide("editingTimeDep")
     values$nTimedep <- values$nTimedep + 1
+    values[[paste0("nTimedepNC", values$nTimedep)]] <- 1 
   })
-  # observeEvent(input$timedepEditNewValueNC, {
-  #   values$nTimedepNC <- values$nTimedepNC +1 
-  # })
-  # observe({
-  #   lapply(seq_len(values$nTimedepNC), function(i){
-  #     observeEvent(input[[paste0("timedepEditValueNCDelete", i)]], {
-  #     for (j in i:(length(values$nTimedepNC)-1)){
-  #       updateNumericInput(session, paste0("timedepEditStartNC", j), value = input[[paste0("timedepEditStartNC", j+1)]]) 
-  #       updateNumericInput(session, paste0("timedepEditEndNC", j), value = input[[paste0("timedepEditEndNC", j+1)]])
-  #       updateNumericInput(session, paste0("timedepEditValueNC", j), value = input[[paste0("timedepEditValueNC", j+1)]])
-  #       
-  #     }
-  #      values$nTimedepNC <- values$nTimedepNC - 1
-  #     })
-  #   })
-  # })
-  # 
-  # observe(print(values$nTimedepNC))
+  observeEvent(input$timedepEditNewValueNC, {
+    values[[paste0("nTimedepNC", values$nTimedep)]] <- values[[paste0("nTimedepNC", values$nTimedep)]] + 1
+  })
 })
 
