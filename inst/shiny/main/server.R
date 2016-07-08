@@ -196,38 +196,41 @@ show_module2 <- function(module, edit, n, input, values){
         }
 
       })
-    
-      observeEvent(input[[paste0("timedepNew", n)]], {
-        
-        if (is.null(values[[paste0("nTimedepNC", n)]])){
-          #req(input[[paste0("timedepEnd", n, 0)]])
-          values[[paste0("nTimedepNC", n)]] <- 1
-        }
-        else{
-          #req(input[[paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]])]])
-          values[[paste0("nTimedepNC", n)]] <- values[[paste0("nTimedepNC", n)]] + 1
-        }
-        
-        if (edit)
-          selectorBody <- paste0("#editingTimedepBody", n, " .NC")
-        else
-          selectorBody <- paste0("#timedepBody", n, " .NC")
-        
-        print(values[[paste0("nTimedepNC", n)]])
-        
-        insertUI(selectorBody, ui =
-                   fluidRow(class = "NC",
-                            column(4, textInput(paste0("timedepValueNC", n, values[[paste0("nTimedepNC", n)]]), NULL, "")),
-                            column(4, numericInput(paste0("timedepStart", n, values[[paste0("nTimedepNC", n)]]), NULL, input[[paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]] -1)]] + 1)),
-                            column(4, numericInput(paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]]), NULL, ""))
-                   )
-        )
-        
-      })
-    
+      # jj <- reactive({
+      #   print("uiu")
+      #   input[[paste0("timedepNew", n)]]
+      #   isolate({
+      #   if (is.null(values[[paste0("nTimedepNC", n)]])){
+      #     #req(input[[paste0("timedepEnd", n, 0)]])
+      #     values[[paste0("nTimedepNC", n)]] <- 1
+      #   }
+      #   else{
+      #     #req(input[[paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]])]])
+      #     values[[paste0("nTimedepNC", n)]] <- values[[paste0("nTimedepNC", n)]] + 1
+      #   }
+      # 
+      # 
+      #   # if (edit)
+      #   #   selectorBody <- paste0("#editingTimedepBody", n, " .NC")
+      #   # else
+      #   #   selectorBody <- paste0("#timedepBody", n, " .NC")
+      # 
+      #   lapply(seq_len(values[[paste0("nTimedepNC", n)]]-1), function(i){
+      #    fluidRow(
+      #             column(4, textInput(paste0("timedepValueNC", n, i), NULL, "")),
+      #             column(4, numericInput(paste0("timedepStart", n, i), NULL, "")),# input[[paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]] -1)]] + 1)),
+      #             column(4, numericInput(paste0("timedepEnd", n, i), NULL, ""))
+      #    )
+      #   })
+      #   })
+      # })
+      # jj <- reactive({
+      #   column(2, "salut")
+      # })
     tableBody <- tagList(
       column(2, textInput(paste0("timedepName", n), NULL, ifelse(!is.null(input[[paste0("timedepName", n)]]), input[[paste0("timedepName", n)]], ""))),
       column(2, selectInput(paste0("timedepType", n), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected = ifelse(!is.null(input[[paste0("timedepType", n)]]), input[[paste0("timedepType", n)]], character(0))))
+      # jj()
     )
     tableTitle <- tagList(
       column(2, strong("Name")),
@@ -925,15 +928,10 @@ shinyServer(function(input, output, session) {
   
   lapply(MODULES, function(module) {
     observeEvent(input[[module]], {
-      if (module == "equation"){
-        insertUI("#addModule", ui=show_module2("equation", edit = TRUE, n = values$nEquation, input, values))
-      } else if (module == "rgho"){
-        insertUI("#addModule", ui=show_module2("rgho", edit = TRUE, n = values$nRgho, input, values))
-      } else if (module == "survival"){
-        insertUI("#addModule", ui=show_module2("survival", edit = TRUE, n = values$nSurvival, input, values))
-      } else if (module == "timedep"){
-        insertUI("#addModule", ui=show_module2("timedep", edit = TRUE, n = values$nTimedep, input, values))
-      }
+      for (mod in MODULES){
+          removeUI(paste0("#editing", upFirst(mod)))
+        }
+      insertUI("#addModule", ui=show_module2(module, edit = TRUE, n = values[[paste0("n", upFirst(module))]], input, values))
     })
   })
   
@@ -1228,7 +1226,7 @@ shinyServer(function(input, output, session) {
     #values$survivalDistribution <- NULL
   })
   observeEvent(input$timedepOK, {
-    removeUI("#editingTimedep")
+    #removeUI("#editingTimedep")
     insertUI("#allModules", ui=
                show_module2("timedep", FALSE, values$nTimedep, input, values)
     )
