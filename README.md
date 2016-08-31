@@ -34,6 +34,11 @@ devtools::install_github("pierucci/heemod")
   * Demographic analysis to compute population-level results.
   * Heterogeneity analysis.
 
+Run the graphical user interface with:
+
+```r
+run_shiny()
+```
 ## Learning heemod
 
 To get started read the introduction in `vignette("introduction", "heemod")`.
