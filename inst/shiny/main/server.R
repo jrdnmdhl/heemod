@@ -105,6 +105,8 @@ show_module <- function(module, edit, n, input, values){
         
         if (!is.null(input[[paste0("survivalDistribution", n)]])){
           if (input[[paste0("survivalDistribution", n)]] == "Weibull"){
+            removeUI(paste0(selectorBody, " .new"))
+            removeUI(paste0(selectorTitle, " .new"))
             insertUI(paste0(selectorBody, suffix), ui =
                        isolate({
                          column(2, class = "new", numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],""))
@@ -134,7 +136,7 @@ show_module <- function(module, edit, n, input, values){
           column(2, strong("Lambda"))
         )
   } else if (module == "timedep"){
-      observe({
+       observe({
         if (edit){
           prefix <- "#editingTimedep"
           suffix <- ""
@@ -152,6 +154,8 @@ show_module <- function(module, edit, n, input, values){
           if (input[[paste0("timedepType", n)]] == "nonConstant"){
             removeUI(paste0(selectorBody, " .C"))
             removeUI(paste0(selectorTitle, " .C"))
+            removeUI(paste0(selectorBody, " .NC"), multiple = TRUE)
+            removeUI(paste0(selectorTitle, " .NC"))
             insertUI(paste0(selectorBody, suffix), ui =
                        isolate({
                        tagList(
@@ -197,6 +201,8 @@ show_module <- function(module, edit, n, input, values){
           }
             
           } else {
+            removeUI(paste0(selectorBody, " .C"))
+            removeUI(paste0(selectorTitle, " .C"))
             removeUI(paste0(selectorBody, " .NC"), multiple = TRUE)
             removeUI(paste0(selectorTitle, " .NC"))
             insertUI(paste0(selectorBody, suffix), ui =
@@ -235,7 +241,7 @@ show_module <- function(module, edit, n, input, values){
   } else {
       tagList(
         if (n == 0){
-          h4(names(which(MODULES == module)))
+          h4(id = paste0(module, "H4"), names(which(MODULES == module)))
         },
         if (n == 0 | !module %in% c("equation", "rgho"))
         fluidRow(id = paste0(module, "Title", n), class = "row-eq-height",
@@ -250,11 +256,46 @@ show_module <- function(module, edit, n, input, values){
 }
 
 
+insert_module_line <-function(module, input, values){
+  n <- values[[paste0("n", upFirst(module))]]
+  req(n > 0)
+  lapply(seq_len(n)-1, function(i){
+    removeUI(paste0("#", module, "H4"), multiple=TRUE)
+    removeUI(paste0("#", module, "Body",i), multiple=TRUE)
+    removeUI(paste0("#", module, "Title",i), multiple=TRUE)
+  })
+  
+  lapply(seq_len(n)-1, function(i){
+    insertUI("#allModules", ui=
+               show_module(module, FALSE, i, input, values)
+    )
+  })
+}
+
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0)
-  loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables=0, nameStrategies = 0)
-  tmp <- reactiveValues(showStateParam = NULL)
+  loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables = 0, nameStrategies = 0)
   
+  onBookmark(function(state) {
+    nameValues <- names(reactiveValuesToList(values))
+    sapply(nameValues, function(x){
+      state$values[[x]] <- values[[x]]
+    })
+  })
+  # Restore extra values from state$values when we restore
+  onRestore(function(state) {
+    nameValues <- names(reactiveValuesToList(values))
+    sapply(nameValues, function(x){
+      values[[x]] <- state$values[[x]]
+    })
+  })
+  setBookmarkExclude(
+    c(
+      paste0(MODULES, "OK"),
+      "newParam",
+      unname(MODULES)
+    )
+  )
   showStateParam <- function(nbStrat, input, values, click) {
     nbStates <- input$nbStates
     nbStateVariables <- input$nbStateVariables
@@ -903,33 +944,38 @@ shinyServer(function(input, output, session) {
     })
   })
 
-  
+
+  observe({
+    insert_module_line("equation", input, values)
+  })
+
   observeEvent(input$equationOK, {
     removeUI("#editingEquation")
-    insertUI("#allModules", ui=
-      show_module("equation", FALSE, values$nEquation, input, values)
-    )
     values$nEquation <- values$nEquation + 1
+  })
+  observe({
+    insert_module_line("rgho", input, values)
   })
   observeEvent(input$rghoOK, {
     removeUI("#editingRgho")
-    insertUI("#allModules", ui=
-               show_module("rgho", FALSE, values$nRgho, input, values)
-    )
     values$nRgho <- values$nRgho + 1
+  })
+  observe({
+    insert_module_line("survival", input, values)
   })
   observeEvent(input$survivalOK, {
     removeUI("#editingSurvival")
-    insertUI("#allModules", ui=
-               show_module("survival", FALSE, values$nSurvival, input, values)
-    )
     values$nSurvival <- values$nSurvival + 1
+  })
+  
+  observe({
+    insert_module_line("timedep", input, values)
   })
   observeEvent(input$timedepOK, {
     removeUI("#editingTimedep")
-    insertUI("#allModules", ui=
-               show_module("timedep", FALSE, values$nTimedep, input, values)
-    )
+    # insertUI("#allModules", ui=
+    #            show_module("timedep", FALSE, values$nTimedep, input, values)
+    # )
     values$insertedNC <- TRUE
     
   }) 
