@@ -24,7 +24,7 @@
 
 <p><code>heemod</code> is an <code>R</code> toolset for health economic evaluation modelling. It aims to provide a simple and consistent interface for Markov models specification and comparison. Non-homogeneous Markov models (with time varying properties) are supported.</p>
 
-<p>Most of the analyses presented in <a href="http://ukcatalogue.oup.com/product/9780198526629.do">Decision Modelling for Health Economic Evaluation</a> can be performed with <code>heemod</code>. See <a href="https://cran.r-project.org/web/packages/heemod/vignettes/reproduction.html">this vignette</a> for an exact reproduction of the analyses from the book.</p>
+<p>Most of the analyses presented in <a href="http://ukcatalogue.oup.com/product/9780198526629.do">Decision Modelling for Health Economic Evaluation</a> can be performed with <code>heemod</code>. See <a href="https://cran.r-project.org/web/packages/heemod/vignettes/i-reproduction.html">this page</a> for an exact reproduction of the analyses from the book.</p>
 
 <p>This package is still a <em>beta</em> version.</p>
 
@@ -40,7 +40,7 @@
 <li>the latest development version from github with:</li>
 </ul>
 
-<div class="highlight highlight-source-r"><pre><span class="pl-e">devtools</span><span class="pl-k">::</span>install_github(<span class="pl-s"><span class="pl-pds">"</span>pierucci/heemod<span class="pl-pds">"</span></span>)</pre></div>
+<div class="highlight highlight-source-r"><pre><span class="pl-e">devtools</span><span class="pl-k">::</span>install_github(<span class="pl-s"><span class="pl-pds">"</span>pierucci/heemod@devel<span class="pl-pds">"</span></span>)</pre></div>
 
 <h2>
 <a id="main-features" class="anchor" href="#main-features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Main features</h2>
@@ -53,39 +53,52 @@
 <li>Probabilistic uncertainty analysis.</li>
 <li>Deterministic sensitivity analysis.</li>
 <li>Multiple state membership correction methods (life-table, half-cycle...).</li>
+<li>Demographic analysis to compute population-level results.</li>
+<li>Heterogeneity analysis.</li>
 </ul>
 
 <h2>
 <a id="learning-heemod" class="anchor" href="#learning-heemod" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Learning heemod</h2>
 
-<p>To get started read the intro <a href="https://cran.r-project.org/web/packages/heemod/vignettes/introduction.html">vignette</a>.</p>
+<p>To get started read the intro <a href="https://cran.r-project.org/web/packages/heemod/vignettes/a-introduction.html">vignette</a>.</p>
 
 <p>Specific analysis examples (mostly inspired from Decision Modelling for Health Economic Evaluation) can be found in the following vignettes:</p>
 
 <ul>
 <li>
-<a href="https://cran.r-project.org/web/packages/heemod/vignettes/homogeneous.html">Homogeneous Markov model</a>.</li>
+<a href="https://cran.r-project.org/web/packages/heemod/vignettes/b-homogeneous.html">Homogeneous Markov model</a>.</li>
 <li>
-<a href="https://cran.r-project.org/web/packages/heemod/vignettes/non-homogeneous.html">Non-homogeneous Markov model</a>.</li>
+<a href="https://cran.r-project.org/web/packages/heemod/vignettes/c-non-homogeneous.html">Non-homogeneous Markov model</a>.</li>
 <li>
-<a href="https://cran.r-project.org/web/packages/heemod/vignettes/probabilistic.html">Probabilistic uncertainty analysis</a>.</li>
+<a href="https://cran.r-project.org/web/packages/heemod/vignettes/d-probabilistic.html">Probabilistic uncertainty analysis</a>.</li>
 <li>
-<a href="https://cran.r-project.org/web/packages/heemod/vignettes/sensitivity.html">Deterministic sensitivity analysis</a>.</li>
-</ul>
-
-<h2>
-<a id="future-developments" class="anchor" href="#future-developments" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Future developments</h2>
-
-<p>Upcoming vignettes:</p>
-
-<ul>
-<li>Heterogeneity analysis in <code>vignette("heterogeneity", package = "heemod")</code>.</li>
+<a href="https://cran.r-project.org/web/packages/heemod/vignettes/e-sensitivity.html">Deterministic sensitivity analysis</a>.</li>
+<li>
+<a href="https://cran.r-project.org/web/packages/heemod/vignettes/g-heterogeneity.html">Heterogeneity &amp; Demographic analysis</a>.</li>
+<li>
+<a href="https://cran.r-project.org/web/packages/heemod/vignettes/h-tabular.html">Running the model from tabular input</a>.</li>
 </ul>
 
 <h2>
 <a id="devs" class="anchor" href="#devs" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Devs</h2>
 
 <p><a href="http://www.urc-eco.fr/Kevin-ZARCA,402">Kevin Zarca</a> and <a href="https://pierucci.github.io/">Antoine Filipović-Pierucci</a>.</p>
+
+<h1 align="center">
+<a id="----" class="anchor" href="#----" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>
+<a href="http://www.urc-eco.fr">
+    <img width="220" src="images/logo.png" alt="">
+</a>
+</h1>
+
+<h2>
+<a id="contributors" class="anchor" href="#contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contributors</h2>
+
+<ul>
+<li><a href="https://github.com/MattWiener">Matthew Wiener</a></li>
+<li><a href="https://github.com/ZdenekKabat">Zdenek Kabat</a></li>
+<li><a href="https://github.com/vojtech-filipec">Vojtech Filipec</a></li>
+</ul>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/pierucci/heemod">heemod</a> is maintained by <a href="https://github.com/pierucci">pierucci</a>.</span>
