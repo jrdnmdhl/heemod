@@ -1,5 +1,6 @@
 library(shinyjs)
-shinyUI(
+
+function(request) {
   fluidPage(
     lang = "en-US",
     useShinyjs(),
@@ -30,11 +31,6 @@ shinyUI(
       
       tabPanel(
         "States",
-        sidebarLayout(
-          sidebarPanel(
-            fileInput("loadButton", "Load model")
-          ),
-          mainPanel(
             fluidRow(
               column(
                 6, 
@@ -88,72 +84,70 @@ shinyUI(
                 )
               )
             )
-          )
-        )
       ),
       
-#       tabPanel(
-#         "Parameters", 
-#         sidebarLayout(
-#           sidebarPanel(
-#             h3("Mortality rate"),
-#             checkboxInput(
-#               "use_morta",
-#               "Use in model? (as mortality_rate)",
-#               width = "100%"
-#             ),
-#             numericInput(
-#               "startAge",
-#               "Age at beginning",
-#               0,
-#               width = "100%"
-#             ),
-#             numericInput(
-#               "cycleLength",
-#               "Duration of a cycle (years)",
-#               1,
-#               width = "100%"
-#             ),
-#             radioButtons(
-#               "gender",
-#               "Sex",
-#               choices = c(Female = "FMLE", Male = "MLE")
-#             ),
-#             uiOutput("searchRegion"),
-#             uiOutput("searchCountry"),
-#             conditionalPanel(
-#               condition = "input.checkShowHelp == 1",
-#               wellPanel(
-#                 style = "background-color: #ffffff;",
-#                 em("Input age-specific mortality rate from WHO databases."),
-#                 em("The rate can then be called in transitions matrixes by its name ("),
-#                 strong("mortality_rate"),
-#                 em(").")
-#               )
-#             )
-#           ),
-#           mainPanel(
-#             h3("Custom parameters"),
-#             uiOutput("globalParameters"),
-#             conditionalPanel(
-#               condition = "input.checkShowHelp == 1",
-#               fluidRow(
-#                 column(
-#                   4,
-#                   wellPanel(
-#                     style = "background-color: #ffffff;",
-#                     em("Optional parameters to be called in transition matrix or state values. 
-#                The variable "),
-#                     strong("markov_cycle"),
-#                     em(" is defined inside the model and takes values 0, 1, 2... n at each cycle.
-#                It can thus be used to define time-varying properties (such as age = 50 + markov_cycle).")
-#                   )
-#                 )
-#               )
-#             )
-#           )
-#         )
-#       ), 
+      #       tabPanel(
+      #         "Parameters", 
+      #         sidebarLayout(
+      #           sidebarPanel(
+      #             h3("Mortality rate"),
+      #             checkboxInput(
+      #               "use_morta",
+      #               "Use in model? (as mortality_rate)",
+      #               width = "100%"
+      #             ),
+      #             numericInput(
+      #               "startAge",
+      #               "Age at beginning",
+      #               0,
+      #               width = "100%"
+      #             ),
+      #             numericInput(
+      #               "cycleLength",
+      #               "Duration of a cycle (years)",
+      #               1,
+      #               width = "100%"
+      #             ),
+      #             radioButtons(
+      #               "gender",
+      #               "Sex",
+      #               choices = c(Female = "FMLE", Male = "MLE")
+      #             ),
+      #             uiOutput("searchRegion"),
+      #             uiOutput("searchCountry"),
+      #             conditionalPanel(
+      #               condition = "input.checkShowHelp == 1",
+      #               wellPanel(
+      #                 style = "background-color: #ffffff;",
+      #                 em("Input age-specific mortality rate from WHO databases."),
+      #                 em("The rate can then be called in transitions matrixes by its name ("),
+      #                 strong("mortality_rate"),
+      #                 em(").")
+      #               )
+      #             )
+      #           ),
+      #           mainPanel(
+      #             h3("Custom parameters"),
+      #             uiOutput("globalParameters"),
+      #             conditionalPanel(
+      #               condition = "input.checkShowHelp == 1",
+      #               fluidRow(
+      #                 column(
+      #                   4,
+      #                   wellPanel(
+      #                     style = "background-color: #ffffff;",
+      #                     em("Optional parameters to be called in transition matrix or state values. 
+      #                The variable "),
+      #                     strong("markov_cycle"),
+      #                     em(" is defined inside the model and takes values 0, 1, 2... n at each cycle.
+      #                It can thus be used to define time-varying properties (such as age = 50 + markov_cycle).")
+      #                   )
+      #                 )
+      #               )
+      #             )
+      #           )
+      #         )
+      #       ), 
       
       tabPanel(
         "Transition Matrix",    
@@ -187,24 +181,23 @@ shinyUI(
               4,
               wellPanel(
                 style = "background-color: #ffffff;",
-                em("Matrix of transition probabilities between states.
+                p(em("Matrix of transition probabilities between states.
                References can be made to parameters computed in the previous tab.
-               The sum of probabilities per row must equal 1. The alias "),
+               The sum of probabilities per row must equal 1.")),
+                  p(em("The alias "),
                 strong("C"),
-                em(" (meaning probability complement) means 1 minus the row sum of other probabilities.")
+                em(" (meaning probability complement) means 1 minus the row sum of other probabilities.")),
+                   p(em("The variable "),
+                strong("markov_cycle"),
+                em(" is defined inside the model and takes values 0, 1, 2... n at each cycle.
+               It can thus be used to define time-varying properties (such as p = 1 / (markov_cycle + 1))."))
               )
             )
           )
         )
       ),
       tabPanel(
-        "Global Parameters",
-        uiOutput("globalParameters"),
-        uiOutput("addModule"),
-        uiOutput("allModules")
-      ), 
-      tabPanel(
-        "States Parameters",
+        "States Values",
         sidebarLayout(
           sidebarPanel(
             numericInput(
@@ -300,12 +293,6 @@ shinyUI(
         )
       ),
       tabPanel(
-        "Deterministic sensitivity analysis",
-        fluidRow(
-         uiOutput("DSA") 
-        )
-      ),
-      tabPanel(
         "Results",
         sidebarLayout(
           sidebarPanel(
@@ -379,20 +366,11 @@ shinyUI(
           column(
             3, 
             offset = 3,
-            downloadButton("saveButton", "Save model")
+            bookmarkButton()
           )
         )
-      ),
-      tabPanel(
-        "Debug",
-        h3("Parameters"),
-        uiOutput("debugParams"),
-        h3("Models"),
-        uiOutput("debugModels"),
-        h3("Run Models"),
-        verbatimTextOutput("debugRunModels")
       )
     )
   )
-)
-
+  
+}

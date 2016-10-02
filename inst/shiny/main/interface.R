@@ -51,6 +51,7 @@ ux_state_names <- function(input) {
 }
 
 ux_parameters <- function(input, values) {
+  return(define_parameters())
   seq_param <- seq_len(ux_nb_parameters(values))
   
   trim <- function (x) gsub("^\\s+|\\s+$", "", x)
@@ -164,7 +165,7 @@ ux_matrix <- function(input, model_number) {
       )
     )
     
-    define_matrix_(
+    heemod:::define_matrix_(
       .dots = lazyeval::as.lazy_dots(mat_values),
       state_names = ux_state_names(input)
     )
@@ -207,7 +208,7 @@ ux_state <- function(input, model_number, state_number) {
   
   names(state_values) <- state_value_names
   
-  define_state_(
+  heemod:::define_state_(
     lazyeval::as.lazy_dots(state_values)
   )
 }
@@ -225,7 +226,7 @@ ux_state_list <- function(input, model_number) {
       )
   )
   names(list_states) <- ux_state_names(input)
-  define_state_list_(list_states)
+  heemod:::define_state_list_(list_states)
 }
 
 ux_model <- function(input, values, model_number) {

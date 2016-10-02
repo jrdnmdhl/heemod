@@ -1,8 +1,10 @@
 source("interface.R")
+source("global.R")
 library(dplyr)
 library(Hmisc)
-library(heemod)
 library(rgho)
+
+library(heemod)
 
 REGION <- NULL
 COUNTRY <- NULL
@@ -40,7 +42,7 @@ searchRegion <- function(n, input){
 }
 
 searchCountry <- function(n, input){
-     req(input[[paste0("rghoRegion", n)]])
+  req(input[[paste0("rghoRegion", n)]])
   countryCodes <- filter_attrs(
     COUNTRY,
     WHO_REGION_CODE == input[[paste0("rghoRegion", n)]]
@@ -66,8 +68,8 @@ show_module <- function(module, edit, n, input, values){
     values$moduleEdit <- FALSE
   if (module == "equation") {
     tableTitle <- tagList(
-                    column(2, strong("Name")),
-                    column(2, strong("Value"))
+      column(2, strong("Name")),
+      column(2, strong("Value"))
     )
     tableBody <- tagList(
       column(2, textInput(paste0("equationName", n), NULL, ifelse(!is.null(input[[paste0("equationName", n)]]), input[[paste0("equationName", n)]], ""))),
@@ -89,97 +91,97 @@ show_module <- function(module, edit, n, input, values){
       column(2, strong("Country"))
     )
   } else if (module == "survival"){
-      observe({
-        if (edit){
-          prefix <- "#editingSurvival"
-          suffix <- ""
-          whereBody <- "beforeEnd"
-        }
-        else {
-          prefix <- "#survival"
-          suffix <- " div:last"
-          whereBody <- "beforeBegin"
-        }
-        selectorBody <- paste0(prefix, "Body", n)
-        selectorTitle <- paste0(prefix, "Title", n)
-        
-        if (!is.null(input[[paste0("survivalDistribution", n)]])){
-          if (input[[paste0("survivalDistribution", n)]] == "Weibull"){
-            insertUI(paste0(selectorBody, suffix), ui =
-                       isolate({
-                         column(2, class = "new", numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],""))
-                         )
-                       }),
-                     where = whereBody
-            )
-            insertUI(selectorTitle, ui = 
-                       column(2, class = "new", strong("k")
+    observe({
+      if (edit){
+        prefix <- "#editingSurvival"
+        suffix <- ""
+        whereBody <- "beforeEnd"
+      }
+      else {
+        prefix <- "#survival"
+        suffix <- " div:last"
+        whereBody <- "beforeBegin"
+      }
+      selectorBody <- paste0(prefix, "Body", n)
+      selectorTitle <- paste0(prefix, "Title", n)
+      
+      if (!is.null(input[[paste0("survivalDistribution", n)]])){
+        if (input[[paste0("survivalDistribution", n)]] == "Weibull"){
+          insertUI(paste0(selectorBody, suffix), ui =
+                     isolate({
+                       column(2, class = "new", numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],""))
                        )
-            )
-          } else {
-            removeUI(paste0(selectorBody, " .new"))
-            removeUI(paste0(selectorTitle, " .new"))
-          }
+                     }),
+                   where = whereBody
+          )
+          insertUI(selectorTitle, ui = 
+                     column(2, class = "new", strong("k")
+                     )
+          )
+        } else {
+          removeUI(paste0(selectorBody, " .new"))
+          removeUI(paste0(selectorTitle, " .new"))
         }
-        
-      })
-        tableBody <- tagList(
-                              column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
-                              column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
-                              column(2, numericInput(paste0("survivalLambda", n), NULL, ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], "")))
-        )
-        tableTitle <- tagList(
-          column(2, strong("Name")), 
-          column(2, strong("Distribution")), 
-          column(2, strong("Lambda"))
-        )
+      }
+      
+    })
+    tableBody <- tagList(
+      column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
+      column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
+      column(2, numericInput(paste0("survivalLambda", n), NULL, ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], "")))
+    )
+    tableTitle <- tagList(
+      column(2, strong("Name")), 
+      column(2, strong("Distribution")), 
+      column(2, strong("Lambda"))
+    )
   } else if (module == "timedep"){
-      observe({
-        if (edit){
-          prefix <- "#editingTimedep"
-          suffix <- ""
-          whereBody <- "beforeEnd"
-        }
-        else {
-          prefix <- "#timedep"
-          suffix <- " div:last"
-          whereBody <- "beforeBegin"
-        }
-        selectorBody <- paste0(prefix, "Body", n)
-        selectorTitle <- paste0(prefix, "Title", n)
-        
-        if (!is.null(input[[paste0("timedepType", n)]])){
-          if (input[[paste0("timedepType", n)]] == "nonConstant"){
-            removeUI(paste0(selectorBody, " .C"))
-            removeUI(paste0(selectorTitle, " .C"))
-            insertUI(paste0(selectorBody, suffix), ui =
-                       isolate({
+    observe({
+      if (edit){
+        prefix <- "#editingTimedep"
+        suffix <- ""
+        whereBody <- "beforeEnd"
+      }
+      else {
+        prefix <- "#timedep"
+        suffix <- " div:last"
+        whereBody <- "beforeBegin"
+      }
+      selectorBody <- paste0(prefix, "Body", n)
+      selectorTitle <- paste0(prefix, "Title", n)
+      
+      if (!is.null(input[[paste0("timedepType", n)]])){
+        if (input[[paste0("timedepType", n)]] == "nonConstant"){
+          removeUI(paste0(selectorBody, " .C"))
+          removeUI(paste0(selectorTitle, " .C"))
+          insertUI(paste0(selectorBody, suffix), ui =
+                     isolate({
                        tagList(
                          column(id = paste0("timedepNC",n), 6, class = "NC",
-                         fluidRow(
-                           column(4, textInput(paste0("timedepValueNC", n, 0), NULL,  ifelse(!is.null(input[[paste0("timedepValueNC", n, 0)]]), input[[paste0("timedepValueNC", n, 0)]], ""))),
-                           column(4, numericInput(paste0("timedepStart", n, 0), NULL, ifelse(!is.null(input[[paste0("timedepStart", n, 0)]]), input[[paste0("timedepStart", n, 0)]],""))),
-                           column(4, numericInput(paste0("timedepEnd", n, 0), NULL, ifelse(!is.null(input[[paste0("timedepEnd", n, 0)]]), input[[paste0("timedepEnd", n, 0)]], "")))
-                         )
-                         
+                                fluidRow(
+                                  column(4, textInput(paste0("timedepValueNC", n, 0), NULL,  ifelse(!is.null(input[[paste0("timedepValueNC", n, 0)]]), input[[paste0("timedepValueNC", n, 0)]], ""))),
+                                  column(4, numericInput(paste0("timedepStart", n, 0), NULL, ifelse(!is.null(input[[paste0("timedepStart", n, 0)]]), input[[paste0("timedepStart", n, 0)]],""))),
+                                  column(4, numericInput(paste0("timedepEnd", n, 0), NULL, ifelse(!is.null(input[[paste0("timedepEnd", n, 0)]]), input[[paste0("timedepEnd", n, 0)]], "")))
+                                )
+                                
                          ),
                          column(1, class = "NC", actionButton(paste0("timedepNew", n), icon("plus")))
-
+                         
                        )
-                       })
-                        , where = whereBody
-            )
-                     
-            insertUI(selectorTitle, ui =
-                       column(6, class = "NC",
-                              fluidRow(
-                       column(4, strong("Value")),
-                       column(4, strong("Cycle Start")),
-                       column(4, strong("Cycle End"))
-                       )
-                       )
-            )
-            if (edit){ # to avoid duplicate creation of the observer
+                     })
+                   , where = whereBody
+          )
+          
+          insertUI(selectorTitle, ui =
+                     column(6, class = "NC",
+                            fluidRow(
+                              column(4, strong("Value")),
+                              column(4, strong("Cycle Start")),
+                              column(4, strong("Cycle End"))
+                            )
+                     )
+          )
+          if (edit){ # to avoid duplicate creation of the observer
             observeEvent(input[[paste0("timedepNew", n)]], {
               if (is.null(values[[paste0("nTimedepNC", n)]]))
                 values[[paste0("nTimedepNC", n)]] <- 1
@@ -192,27 +194,27 @@ show_module <- function(module, edit, n, input, values){
                            column(4, numericInput(paste0("timedepStart", n, i), NULL, input[[paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]] -1)]] + 1)),
                            column(4, numericInput(paste0("timedepEnd", n, i), NULL, ""))
                          )
-                    )
+              )
             })
           }
-            
-          } else {
-            removeUI(paste0(selectorBody, " .NC"), multiple = TRUE)
-            removeUI(paste0(selectorTitle, " .NC"))
-            insertUI(paste0(selectorBody, suffix), ui =
-                       isolate({
-                                  column(2, class = "C",
-                                         textInput(paste0("timedepValueC", n), NULL,  ifelse(!is.null(input[[paste0("timedepValueC", n)]]), input[[paste0("timedepValueC", n)]],"")))
-                       }),
-                     where = whereBody
-            )
-            insertUI(selectorTitle, ui =
-                                column(2, class = "C", strong("Value"))
-            )
-          }
+          
+        } else {
+          removeUI(paste0(selectorBody, " .NC"), multiple = TRUE)
+          removeUI(paste0(selectorTitle, " .NC"))
+          insertUI(paste0(selectorBody, suffix), ui =
+                     isolate({
+                       column(2, class = "C",
+                              textInput(paste0("timedepValueC", n), NULL,  ifelse(!is.null(input[[paste0("timedepValueC", n)]]), input[[paste0("timedepValueC", n)]],"")))
+                     }),
+                   where = whereBody
+          )
+          insertUI(selectorTitle, ui =
+                     column(2, class = "C", strong("Value"))
+          )
         }
-
-      })
+      }
+      
+    })
     tableBody <- tagList(
       column(2, textInput(paste0("timedepName", n), NULL, ifelse(!is.null(input[[paste0("timedepName", n)]]), input[[paste0("timedepName", n)]], ""))),
       column(2, selectInput(paste0("timedepType", n), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected = ifelse(!is.null(input[[paste0("timedepType", n)]]), input[[paste0("timedepType", n)]], character(0))))
@@ -223,34 +225,34 @@ show_module <- function(module, edit, n, input, values){
     )
   }
   if (edit){
-      wellPanel(id = paste0("editing", upFirst(module)),
-                fluidRow(id = paste0("editing", upFirst(module), "Title", n), class = "row-eq-height",
-                  tableTitle
-                ),
-                fluidRow(id = paste0("editing", upFirst(module), "Body", n), class = "row-eq-height",
-                  tableBody
-                ),
-                actionButton(paste0(module, "OK"), "OK")
-      )
+    wellPanel(id = paste0("editing", upFirst(module)),
+              fluidRow(id = paste0("editing", upFirst(module), "Title", n), class = "row-eq-height",
+                       tableTitle
+              ),
+              fluidRow(id = paste0("editing", upFirst(module), "Body", n), class = "row-eq-height",
+                       tableBody
+              ),
+              actionButton(paste0(module, "OK"), "OK")
+    )
   } else {
-      tagList(
-        if (n == 0){
-          h4(names(which(MODULES == module)))
-        },
-        if (n == 0 | !module %in% c("equation", "rgho"))
+    tagList(
+      if (n == 0){
+        h4(names(which(MODULES == module)))
+      },
+      if (n == 0 | !module %in% c("equation", "rgho"))
         fluidRow(id = paste0(module, "Title", n), class = "row-eq-height",
-          tableTitle
+                 tableTitle
         ),
-        fluidRow(id = paste0(module, "Body", n), class = "row-eq-height",
-          tableBody, 
-          column(1, actionLink(paste0(module,"Delete", n), icon("trash-o", "fa-2x")))
-        )
+      fluidRow(id = paste0(module, "Body", n), class = "row-eq-height",
+               tableBody, 
+               column(1, actionLink(paste0(module,"Delete", n), icon("trash-o", "fa-2x")))
       )
-    }
+    )
+  }
 }
 
 
-shinyServer(function(input, output, session) {
+function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0)
   loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables=0, nameStrategies = 0)
   tmp <- reactiveValues(showStateParam = NULL)
@@ -636,7 +638,7 @@ shinyServer(function(input, output, session) {
     )
   })
   
-
+  
   
   observe({
     if (loadedValues$loaded > 0){
@@ -830,7 +832,7 @@ shinyServer(function(input, output, session) {
       lapply(
         seq_len(ux_nb_models(input)),
         function(x) {
-          renderPrint(ux_parameters(input, values, x))
+          renderPrint(ux_parameters(input, values))
         }
       )
     )
@@ -869,7 +871,7 @@ shinyServer(function(input, output, session) {
             lapply(seq_along(MODULES), function(i){
               fluidRow(
                 actionLink(MODULES[i], names(MODULES)[i])
-                )
+              )
             })
           )
         )
@@ -897,17 +899,17 @@ shinyServer(function(input, output, session) {
   lapply(MODULES, function(module) {
     observeEvent(input[[module]], {
       for (mod in MODULES){
-          removeUI(paste0("#editing", upFirst(mod)))
-        }
+        removeUI(paste0("#editing", upFirst(mod)))
+      }
       insertUI("#addModule", ui=show_module(module, edit = TRUE, n = values[[paste0("n", upFirst(module))]], input, values))
     })
   })
-
+  
   
   observeEvent(input$equationOK, {
     removeUI("#editingEquation")
     insertUI("#allModules", ui=
-      show_module("equation", FALSE, values$nEquation, input, values)
+               show_module("equation", FALSE, values$nEquation, input, values)
     )
     values$nEquation <- values$nEquation + 1
   })
@@ -951,5 +953,5 @@ shinyServer(function(input, output, session) {
     values$nTimedep <- values$nTimedep + 1
     values$insertedNC <- FALSE
   })
-})
+}
 
