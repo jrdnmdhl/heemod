@@ -8,7 +8,6 @@ library(rgho)
 
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0)
-  loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables = 0, nameStrategies = 0)
   localValues <- reactiveValues(loaded = FALSE)
 
 
@@ -89,8 +88,6 @@ shinyServer(function(input, output, session) {
       updateSelectInput(session,"countMethod", selected = input$countMethod)
       updateNumericInput(session, "cycles", value = input$cycles)
     }
-    loadedValues[["input"]] <- input
-    loadedValues[["values"]] <- values
   })
   
   output$saveButton <- downloadHandler(
@@ -102,18 +99,9 @@ shinyServer(function(input, output, session) {
     }
   )
   
-  observeEvent(input$loadButton, {
-    loadedValues$loaded <- loadedValues$loaded + 1
-  })
-  
   output$nameStates <- renderUI({
     req(input$nbStates)
     
-    if(loadedValues$loaded > 0 & isolate(loadedValues$nameStates < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues$nameStates <- loadedValues$loaded
-    }
     
     lapply(
       seq_len(input$nbStates),
@@ -132,13 +120,7 @@ shinyServer(function(input, output, session) {
   
   output$nameStateVariables <- renderUI({
     req(input$nbStateVariables)
-    
-    if(loadedValues$loaded > 0 & isolate(loadedValues$nameStateVariables < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues$nameStateVariables <- loadedValues$loaded
-    }
-    
+
     lapply(
       seq_len(input$nbStateVariables),
       function(i) {
@@ -162,12 +144,6 @@ shinyServer(function(input, output, session) {
   output$nameStrategies <- renderUI({
     req(input$nbStrategies)
     
-    if(loadedValues$loaded > 0 & isolate(loadedValues$nameStrategies < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues$nameStrategies <- loadedValues$loaded
-    }
-    
     lapply(
       seq_len(input$nbStrategies),
       function(i) {
@@ -184,72 +160,23 @@ shinyServer(function(input, output, session) {
   })
   
   
-  show_first <- function(val, FUN, loadedValues, input){
-    req(input$nbStates, input$nbStrategies)
-    if (val == "SP1")
-      req(input$nbStateVariables)
-    for (i in 1:input$nbStates){
-      req(input[[paste0("stateName", i)]])
-    }
-    req(input$strategyName1)
-    if(loadedValues$loaded > 0 & isolate(loadedValues[[val]] < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues[[val]] <- loadedValues$loaded
-    }
-    FUN(1, input, values, click = FALSE)
-  }
-  
-  copyValues <- function(trigger, input, values, FUN) {
-    a <- eventReactive(input[[trigger]],{
-      FUN(input$nbStrategies, input, values, TRUE)
-    })
-    
-    return(a())
-  }
-  
-  show_next <- function(val, trigger, input, values, FUN, loadedValues){
-    req(input$nbStates, input$nbStrategies > 1)
-    if (val == "SP2")
-      req(input$nbStateVariables)
-    
-    for (i in 1:input$nbStates){
-      req(input[[paste0("stateName", i)]])
-    }
-    for (i in 1:input$nbStrategies){
-      req(input[[paste0("strategyName", i)]])
-    }
-    input[[trigger]]
-    if(loadedValues$loaded > 0 & isolate(loadedValues[[val]] < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues[[val]] <- loadedValues$loaded
-      FUN(input$nbStrategies, input, values, click = FALSE)
-    } 
-    else if (input[[trigger]]){
-      copyValues(trigger, input = input, values = values, FUN)
-    } else {
-      FUN(input$nbStrategies, input, values, click = FALSE)
-    }
-  }
-  
   output$transMatrix1 <- renderUI({
-    show_first(val = "TM1", FUN = showTransMatrix, loadedValues, input)    
+    show_first(val = "TM1", FUN = showTransMatrix, input)    
   })
   
   output$transMatrix2 <- renderUI({
-    show_next(val = "TM2", trigger = "copyValuesParametersTM", input, values, showTransMatrix, loadedValues)
+    show_next(val = "TM2", trigger = "copyValuesParametersTM", input, values, showTransMatrix)
     
   })  
   
   output$stateParameters1 <- renderUI({
     req(input[[paste0("variableStateName", input$nbStateVariables)]])
-    show_first(val = "SP1", FUN = showStateParam, loadedValues = loadedValues, input)
+    show_first(val = "SP1", FUN = showStateParam, input)
   })
   
   output$stateParameters2 <- renderUI({
     req(input[[paste0("variableStateName", input$nbStateVariables)]])
-    show_next(val = "SP2", trigger = "copyValuesParametersSP", input, values, showStateParam, loadedValues)
+    show_next(val = "SP2", trigger = "copyValuesParametersSP", input, values, showStateParam)
   })
   
   
@@ -258,23 +185,15 @@ shinyServer(function(input, output, session) {
     textInput(
       "costVariable",
       label = "Cost Variable",
-      value = ifelse(loadedValues$loaded == 0, input$variableStateName1, loadedValues$input$costVariable)
+      value = input$variableStateName1
     )
   })
   output$effectVariable <- renderUI({
     textInput(
       "effectVariable",
       label = "Effect Variable",
-      value = ifelse(loadedValues$loaded == 0, input$variableStateName2, loadedValues$input$effectVariable)
+      value = input$variableStateName2
     )
-  })
-  
-
-  
-  observe({
-    if (loadedValues$loaded > 0){
-      values$nGlobalParameters <- loadedValues$values$nGlobalParameters
-    }
   })
   
   observeEvent(input$addParametersGP, {
@@ -284,11 +203,6 @@ shinyServer(function(input, output, session) {
   output$globalParameters <- renderUI({
     req(input$nbStrategies)
     values$nGlobalParameters
-    if(loadedValues$loaded > 0 & isolate(loadedValues$GP < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues$GP <- loadedValues$loaded
-    }
     showGlobalParameters(input, values)
   })
   
@@ -298,11 +212,6 @@ shinyServer(function(input, output, session) {
   
   output$DSA <- renderUI({
     req(input$nbStates, input$nbStrategies)
-    if(loadedValues$loaded > 0 & isolate(loadedValues$DSA < loadedValues$loaded)){
-      input <- loadedValues$input
-      values <- loadedValues$values
-      loadedValues$DSA <- loadedValues$loaded
-    }
     dsa <- lapply(seq_len(values$nGlobalParameters), function(i){
       isolate({
         tags$tr(
@@ -345,14 +254,14 @@ shinyServer(function(input, output, session) {
                       numericInput(
                         paste0("init", i),
                         label = NULL,
-                        value = ifelse (loadedValues$loaded == 0, 1000, ifelse(!is.null(loadedValues$input[[paste0("init",i)]]), loadedValues$input[[paste0("init",i)]], 1000)),
+                        value = 1000,
                         width="100%"
                       )
                     } else {
                       numericInput(
                         paste0("init", i),
                         label = NULL,
-                        value = ifelse (loadedValues$loaded == 0, 0, ifelse(!is.null(loadedValues$input[[paste0("init",i)]]), loadedValues$input[[paste0("init",i)]], 0)),
+                        value = 1000,
                         width="100%"
                       )
                     }

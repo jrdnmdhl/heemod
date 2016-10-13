@@ -428,3 +428,42 @@ insert_module_line <-function(module, input, values, localValues){
     
   })
 }
+
+
+show_first <- function(val, FUN, input){
+  req(input$nbStates, input$nbStrategies)
+  if (val == "SP1")
+    req(input$nbStateVariables)
+  for (i in 1:input$nbStates){
+    req(input[[paste0("stateName", i)]])
+  }
+  req(input$strategyName1)
+  FUN(1, input, values, click = FALSE)
+}
+
+copyValues <- function(trigger, input, values, FUN) {
+  a <- eventReactive(input[[trigger]],{
+    FUN(input$nbStrategies, input, values, TRUE)
+  })
+  
+  return(a())
+}
+
+show_next <- function(val, trigger, input, values, FUN){
+  req(input$nbStates, input$nbStrategies > 1)
+  if (val == "SP2")
+    req(input$nbStateVariables)
+  
+  for (i in 1:input$nbStates){
+    req(input[[paste0("stateName", i)]])
+  }
+  for (i in 1:input$nbStrategies){
+    req(input[[paste0("strategyName", i)]])
+  }
+  input[[trigger]]
+  if (input[[trigger]]){
+    copyValues(trigger, input = input, values = values, FUN)
+  } else {
+    FUN(input$nbStrategies, input, values, click = FALSE)
+  }
+}
