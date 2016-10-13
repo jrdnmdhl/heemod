@@ -27,14 +27,15 @@
 #' 
 #' @param ... Name-value pairs of expressions definig matrix
 #'   cells. Can refer to parameters defined with 
-#'   \code{\link{define_parameters}}. For \code{plot},
+#'   \code{\link{define_parameters}}. For \code{plot}, 
 #'   additional arguments passed to \code{digram::plotmat}.
 #' @param state_names character vector, optional. State 
 #'   names.
 #' @param .OBJECT An object of class \code{uneval_matrix}.
 #' @param x An \code{uneval_matrix} to plot.
 #' @param relsize Argument passed to \code{\link{plotmat}}.
-#' @param shadow.size Argument passed to \code{\link{plotmat}}.
+#' @param shadow.size Argument passed to
+#'   \code{\link{plotmat}}.
 #' @param latex Argument passed to \code{\link{plotmat}}.
 #' @param .dots Used to work around non-standard evaluation.
 #'   
@@ -43,11 +44,8 @@
 #' @export
 #' 
 #' @example inst/examples/example_define_matrix.R
-#' 
-define_matrix <- function(
-  ...,
-  state_names
-) {
+#'   
+define_matrix <- function(..., state_names) {
   .dots <- lazyeval::lazy_dots(...)
   
   if (missing(state_names)) {
@@ -58,12 +56,8 @@ define_matrix <- function(
   define_matrix_(.dots = .dots, state_names = state_names)
 }
 
-#' @export
 #' @rdname define_matrix
-define_matrix_ <- function(
-  .dots,
-  state_names
-) {
+define_matrix_ <- function(.dots, state_names) {
   
   n <- sqrt(length(.dots))
   
@@ -99,14 +93,16 @@ get_state_names.uneval_matrix <- function(x, ...){
 
 #' Return Markov Model Transition Matrix Order
 #' 
-#' A generic that works both with
-#' \code{uneval_matrix} and \code{eval_matrix}.
+#' A generic that works both with \code{uneval_matrix} and
+#' \code{eval_matrix}.
 #' 
 #' For internal use.
-#'
+#' 
 #' @param x A transition matrix, evaluated or not.
-#'
+#'   
 #' @return An integer: matrix order.
+#'   
+#' @keywords internal
 get_matrix_order <- function(x){
   UseMethod("get_matrix_order")
 }
@@ -139,5 +135,5 @@ modify_.uneval_matrix <- function(.OBJECT, .dots){
     ))
   }
   
-  modifyList(.OBJECT, .dots)
+  utils::modifyList(.OBJECT, .dots)
 }

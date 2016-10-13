@@ -3,7 +3,7 @@
 #' Various plots for Markov models probabilistic analysis.
 #' 
 #' \code{type = "ac"} plots cost-effectiveness acceptability
-#' curves, \code{type = "ce"} plots results on the
+#' curves, \code{type = "ce"} plots results on the 
 #' cost-efficiency plane.
 #' 
 #' @param x Result from \code{\link{run_models}}.
@@ -23,7 +23,10 @@ plot.probabilistic <- function(x, type = c("ce", "ac"),
     ce = {
       tab <- normalize_ce(x)
       ggplot2::ggplot(data = tab,
-                      aes(x = .effect, y = .cost, colour = .model_names)) +
+                      ggplot2::aes_string(
+                        x = ".effect",
+                        y = ".cost",
+                        colour = ".model_names")) +
         ggplot2::geom_point() +
         ggplot2::scale_colour_hue(name = "Model") +
         ggplot2::xlab("Effect") +
@@ -31,7 +34,11 @@ plot.probabilistic <- function(x, type = c("ce", "ac"),
     },
     ac = {
       tab <- acceptability_curve(x, values)
-      ggplot2::ggplot(tab, aes(x = .ceac, y = .p, colour = .model)) +
+      ggplot2::ggplot(tab, 
+                      ggplot2::aes_string(
+                        x = ".ceac",
+                        y = ".p",
+                        colour = ".model")) +
         ggplot2::geom_line() +
         ggplot2::ylim(0, 1) +
         ggplot2::scale_colour_hue(name = "Model") +
@@ -41,17 +48,13 @@ plot.probabilistic <- function(x, type = c("ce", "ac"),
     stop("Unknown plot type."))
 }
 
-if(getRversion() >= "2.15.1")
-  utils::globalVariables(c(".ceac", ".index", ".effect", ".p", "n",
-                           ",cost", ".n", ".key", ".model_name", ".model"))
-
 normalize_ce.probabilistic <- function(x) {
   .bm <- get_base_model(x)
-  res <- dplyr::mutate(
-    dplyr::group_by(x, .index),
-    .cost = .cost - sum(.cost * (.model_names == .bm)),
-    .effect = .effect - sum(.effect * (.model_names == .bm))
-  )
+  
+  x %>% 
+    dplyr::group_by_(".index") %>% 
+    dplyr::mutate_(
+      .cost = ~ .cost - sum(.cost * (.model_names == .bm)),
+      .effect = ~ .effect - sum(.effect * (.model_names == .bm))
+    )
 }
-if(getRversion() >= "2.15.1")
-  utils::globalVariables(c(".index", ".cost", ".effect"))

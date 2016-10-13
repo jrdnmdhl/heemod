@@ -32,11 +32,11 @@
 #'   at the beginning.
 #' @param cycles positive integer. Number of Markov Cycles 
 #'   to compute.
-#' @param cost Names or expression to compute cost on the
+#' @param cost Names or expression to compute cost on the 
 #'   cost-effectiveness plane.
-#' @param effect Names or expression to compute effect on
+#' @param effect Names or expression to compute effect on 
 #'   the cost-effectiveness plane.
-#' @param base_model Name of base model used as reference.
+#' @param base_model Name of base model used as reference. 
 #'   By default the model with the lowest effectiveness.
 #' @param method Counting method.
 #' @param list_models List of models, only used by 
@@ -51,8 +51,8 @@ run_models <- function(...,
                        parameters = define_parameters(),
                        init = c(1000L, rep(0L, get_state_number(get_states(list(...)[[1]])) - 1)),
                        cycles = 1,
-                       method = c("beginning", "end",
-                                  "half-cycle", "life-table"),
+                       method = c("life-table", "beginning", "end",
+                                  "half-cycle"),
                        cost = NULL, effect = NULL, base_model = NULL) {
   list_models <- list(...)
   
@@ -64,8 +64,8 @@ run_models <- function(...,
     init = init,
     cycles = cycles,
     method = method,
-    cost = lazyeval::lazy(cost),
-    effect = lazyeval::lazy(effect),
+    cost = lazyeval::lazy_(substitute(cost), env = parent.frame()),
+    effect = lazyeval::lazy_(substitute(effect), env = parent.frame()),
     base_model = base_model
   )
 }
@@ -79,17 +79,20 @@ run_models_ <- function(list_models,
                         method,
                         cost, effect, base_model) {
   
-  if (! all(unlist(lapply(list_models,
-                          function(x) "uneval_model" %in% class(x))))) {
-    .x <- names(list_models[! unlist(lapply(list_models,
-                                            function(x) "uneval_model" %in% class(x)))])
+  if (! all(unlist(lapply(
+    list_models,
+    function(x) "uneval_model" %in% class(x))))) {
+    
+    .x <- names(list_models[! unlist(lapply(
+      list_models,
+      function(x) "uneval_model" %in% class(x)))])
+    
     stop(sprintf(
       "Incorrect model object%s: %s.",
       plur(length(.x)),
       paste(.x, collapse = ", ")
     ))
   }
-  
   
   list_ce <- list(
     .cost = cost,
@@ -133,7 +136,7 @@ run_models_ <- function(list_models,
     ))
   }
   
-  if (! all(init >= 0)) {
+  if (! any(init > 0)) {
     stop("At least one init count must be > 0.")
   }
   
@@ -156,9 +159,8 @@ run_models_ <- function(list_models,
     list_res[[n]]$.model_names <- n
   }
   
-  res <- Reduce(dplyr::bind_rows, list_res)
-  
-  res <- dplyr::mutate_(res, .dots = ce)
+  res <- Reduce(dplyr::bind_rows, list_res) %>% 
+    dplyr::mutate_(.dots = ce)
   
   if (is.null(base_model)) {
     base_model <- get_base_model(res)
@@ -168,7 +170,7 @@ run_models_ <- function(list_models,
     res,
     eval_model_list = eval_model_list,
     uneval_model_list = list_models,
-    class = c("eval_model_list", class(res)),
+    class = c("run_models", class(res)),
     parameters = parameters,
     init = init,
     cycles = cycles,
@@ -178,22 +180,12 @@ run_models_ <- function(list_models,
   )
 }
 
-#' Get Markov Model Parameters
-#' 
-#' 
-#' For internal use.
-#' 
-#' @param x An \code{eval_model_list}
-#'   object.
-#'   
-#' @return An \code{uneval_parameters} or
-#'   \code{eval_parameters} object.
-get_parameters <- function(x){
-  UseMethod("get_parameters")
+get_model_names <- function(x) {
+  x$.model_names
 }
 
-get_parameters.default <- function(x){
-  attr(x, "parameters")
+get_model_count <- function(x) {
+  nrow(x)
 }
 
 get_total_state_values <- function(x) {
@@ -213,9 +205,119 @@ get_base_model.default <- function(x, ...) {
     warning("No effect defined, cannot find base model.")
     return(NULL)
   }
-  x$.model_names[which(x$.effect == min(x$.effect))[1]]
+  x$.model_names[x$.effect == min(x$.effect)][1]
 }
 
-get_base_model.eval_model_list <- function(x, ...) {
+get_base_model.run_models <- function(x, ...) {
   attr(x, "base_model")
+}
+
+#' Get Model Values
+#' 
+#' Given a result from \code{\link{run_models}}, return 
+#' cost and effect values for a specific model.
+#' 
+#' @param x Result from \code{\link{run_models}}.
+#' @param m Model name or index.
+#' @param ...	further arguments passed to or from other
+#'   methods.
+#'   
+#' @return A data frame of values per state.
+#' @export
+get_values <- function(x, ...) {
+  UseMethod("get_values")
+}
+
+#' @rdname get_values
+#' @export
+get_values.run_models <- function(x, m = 1, ...) {
+  check_model_index(x, m, ...)
+  get_values(attr(x, "eval_model_list")[[m]])
+}
+
+#' @rdname get_values
+#' @export
+get_values.eval_model <- function(x, ...) {
+  x$values
+}
+
+#' @rdname get_values
+#' @export
+get_values.list <- function(x, ...) {
+  x$values
+}
+
+#' @rdname get_values
+#' @export
+get_values.updated_models <- function(x, m, ...) {
+  get_values(attributes(x)$combined_models, m, ...)
+}
+
+#' @rdname get_values
+#' @export
+get_values.combined_models <- function(x, m, ...){
+  x <- attributes(x)$eval_model_list
+  x$.model_names <- names(x)
+  check_model_index(x, m)
+  get_values(x[[m]])
+}
+
+#' Get State Membership Counts
+#' 
+#' Given a result from \code{\link{run_models}}, return 
+#' state membership counts for a specific model.
+#' 
+#' @param x Result from \code{\link{run_models}}.
+#' @param m Model name or index.
+#' @param ...	further arguments passed to or from other
+#'   methods.
+#'   
+#' @return A data frame of counts per state.
+#' @export
+get_counts <- function(x, ...) {
+  UseMethod("get_counts")
+}
+
+#' @rdname get_counts
+#' @export
+get_counts.run_models <- function(x, m = 1, ...) {
+  check_model_index(x, m, ...)
+  get_counts(attr(x, "eval_model_list")[[m]])
+}
+
+#' @rdname get_counts
+#' @export
+get_counts.eval_model <- function(x, ...) {
+  x$counts
+}
+
+#' @rdname get_counts
+#' @export
+get_counts.list <- function(x, ...) {
+  x$counts
+}
+
+#' @rdname get_counts
+#' @export
+get_counts.updated_models <- function(x, m, ...) {
+  get_counts(attributes(x)$combined_models, m, ...)
+}
+
+#' @rdname get_counts
+#' @export
+get_counts.combined_models <- function(x, m, ...){
+  x <- attributes(x)$eval_model_list
+  x$.model_names <- names(x)
+  check_model_index(x, m)
+  get_counts(x[[m]])
+}
+
+#' Get Initial State Values
+#' 
+#' @param x x Result from \code{\link{run_models}}.
+#'   
+#' @return A vector of initial state values.
+#' @export
+get_init <- function(x) {
+  attr(x, "init")
 }

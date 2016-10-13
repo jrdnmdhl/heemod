@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_code.R
 \name{get_code}
 \alias{get_code}
-\alias{get_code.eval_model_list}
+\alias{get_code.run_models}
 \alias{get_code.state}
 \alias{get_code.uneval_matrix}
 \alias{get_code.uneval_model}
@@ -12,33 +12,44 @@
 \usage{
 get_code(x, ...)
 
-\method{get_code}{uneval_parameters}(x, name = NULL, ...)
+\method{get_code}{uneval_parameters}(x, name = NULL, depth = 0,
+  n_space = 2, ...)
 
-\method{get_code}{uneval_matrix}(x, name = NULL, ...)
+\method{get_code}{uneval_matrix}(x, name = NULL, depth = 0, n_space = 2,
+  ...)
 
-\method{get_code}{state}(x, name = NULL, ...)
+\method{get_code}{state}(x, name = NULL, depth = 0, n_space = 2, ...)
 
-\method{get_code}{uneval_state_list}(x, ...)
+\method{get_code}{uneval_state_list}(x, depth = 0, n_space = 2, ...)
 
-\method{get_code}{uneval_model}(x, name = NULL, sub = FALSE, ...)
+\method{get_code}{uneval_model}(x, name = NULL, sub = FALSE, depth = 0,
+  n_space = 2, ...)
 
-\method{get_code}{eval_model_list}(x, name = NULL, sub = FALSE, ...)
+\method{get_code}{run_models}(x, name = NULL, sub = FALSE, depth = 0,
+  n_space = 2, ...)
 }
 \arguments{
 \item{x}{An \code{heemod} object.}
 
 \item{...}{Additional parameters passed to methods.}
 
-\item{name}{character. Optional argument giving the name to assign to the object.}
+\item{name}{character. Optional argument giving the name
+to assign to the object.}
 
-\item{sub}{logical. Should states or models be referenced by name in \code{define_model}
-and \code{run_model} instead of including the entire code?}
+\item{depth}{Depth of the function call.}
+
+\item{n_space}{Number of space used for indentation.}
+
+\item{sub}{logical. Should states or models be referenced
+by name in \code{define_model} and \code{run_model}
+instead of including the entire code?}
 }
 \value{
 A character string.
 }
 \description{
-This function returns the \code{R} code to generate an \code{heemod} oj
+This function returns the \code{R} code to generate an
+\code{heemod} object.
 }
 \examples{
 
@@ -55,6 +66,5 @@ m <- define_matrix(
 )
 
 get_code(m)
-
 }
 

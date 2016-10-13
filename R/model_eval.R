@@ -6,7 +6,7 @@
 #' individual per state per model cycle.
 #' 
 #' \code{init} need not be integer. E.g. specifying a vector
-#' of type c(Q = 1, B = 0, C = 0, ...) returns the 
+#' of type \code{c(A = 1, B = 0, C = 0, ...)} returns the 
 #' probabilities for an individual starting in state A to be
 #' in each state, per cycle.
 #' 
@@ -23,23 +23,89 @@
 #' @return An \code{eval_model} object (actually a list of 
 #'   evaluated parameters, matrix, states and cycles 
 #'   counts).
-#' 
+#'   
 #' @example inst/examples/example_eval_model.R
-#' 
+#'   
+#' @keywords internal
 eval_model <- function(model, parameters, cycles, 
                        init, method) {
-  
   stopifnot(
     cycles > 0,
     length(cycles) == 1,
     all(init >= 0)
   )
   
+  uneval_matrix <- get_matrix(model)
+  uneval_states <- get_states(model)
+  
+  i_parameters <- interp_heemod(parameters)
+  
+  i_uneval_matrix <- interp_heemod(
+    uneval_matrix,
+    more = as_expr_list(i_parameters)
+  )
+  
+  i_uneval_states <- interp_heemod(
+    uneval_states,
+    more = as_expr_list(i_parameters)
+  )
+  
+  td_tm <- has_state_cycle(i_uneval_matrix)
+  td_st <- has_state_cycle(i_uneval_states)
+  
+  expand <- any(c(td_tm, td_st))
+  
+  if (expand) {
+    uneval_matrix <- i_uneval_matrix
+    uneval_states <- i_uneval_states
+    
+    # parameters not needed anymore because of interp
+    parameters <- define_parameters()
+    
+    # from cells to cols
+    td_tm <- td_tm %>% 
+      matrix(
+        nrow = get_matrix_order(uneval_matrix), 
+        byrow = TRUE
+      ) %>% 
+      apply(1, any)
+    
+    to_expand <- sort(unique(c(
+      get_state_names(uneval_matrix)[td_tm],
+      get_state_names(uneval_states)[td_st]
+    )))
+    
+    message(sprintf(
+      "Detected use of 'state_cycle', expanding states: %s.",
+      paste(to_expand, collapse = ", ")
+    ))
+    
+    init <- insert(
+      init,
+      which(get_state_names(uneval_matrix) %in% to_expand),
+      rep(0, cycles)
+    )
+    
+    for (st in to_expand) {
+      uneval_matrix <- expand_state(
+        x = uneval_matrix,
+        state_pos = which(get_state_names(uneval_matrix) == st),
+        state_name = st,
+        cycles = cycles
+      )
+      
+      uneval_states <- expand_state(
+        x = uneval_states,
+        state_name = st,
+        cycles = cycles
+      )
+    }
+  }
   parameters <- eval_parameters(parameters,
                                 cycles = cycles)
-  transition_matrix <- eval_matrix(get_matrix(model),
+  transition_matrix <- eval_matrix(uneval_matrix,
                                    parameters)
-  states <- eval_state_list(get_states(model), parameters)
+  states <- eval_state_list(uneval_states, parameters)
   
   count_table <- compute_counts(
     transition_matrix = transition_matrix,
@@ -48,6 +114,15 @@ eval_model <- function(model, parameters, cycles,
   )
   
   values <- compute_values(states, count_table)
+  
+  if (expand) {
+    for (st in to_expand) {
+      exp_cols <- sprintf(".%s_%i", st, seq_len(cycles+1))
+      
+      count_table[[st]] <- rowSums(count_table[exp_cols])
+      count_table <- count_table[-which(names(count_table) %in% exp_cols)]
+    }
+  }
   
   structure(
     list(
@@ -62,22 +137,14 @@ eval_model <- function(model, parameters, cycles,
     cycles = cycles)
 }
 
-get_counts <- function(x){
-  UseMethod("get_counts")
-}
-
-get_counts.eval_model <- function(x){
-  x$counts
-}
-
 #' Compute Count of Individual in Each State per Cycle
 #' 
 #' Given an initial number of individual and an evaluated 
 #' transition matrix, returns the number of individual per 
 #' state per cycle.
 #' 
-#' Use the \code{method} argument to specify if transitions
-#' are supposed to happen at the beginning or the end of
+#' Use the \code{method} argument to specify if transitions 
+#' are supposed to happen at the beginning or the end of 
 #' each cycle. Alternatively linear interpolation between 
 #' cycles can be performed.
 #' 
@@ -88,11 +155,10 @@ get_counts.eval_model <- function(x){
 #' @param method Counting method.
 #'   
 #' @return A \code{cycle_counts} object.
-#' 
-compute_counts <- function(
-  transition_matrix, init,
-  method
-) {
+#'   
+#' @keywords internal
+compute_counts <- function(transition_matrix, init,
+                           method) {
   
   if (! length(init) == get_matrix_order(transition_matrix)) {
     stop(sprintf(
@@ -149,18 +215,18 @@ compute_counts <- function(
   
 }
 
-
 #' Compute State Values per Cycle
 #' 
-#' Given states and counts, computes the total state values
+#' Given states and counts, computes the total state values 
 #' per cycle.
 #' 
 #' @param states An object of class \code{eval_state_list}.
 #' @param counts An object of class \code{cycle_counts}.
 #'   
-#' @return A data.frame of state values, one column per
+#' @return A data.frame of state values, one column per 
 #'   state value and one row per cycle.
 #'   
+#' @keywords internal
 compute_values <- function(states, counts) {
   
   states_names <- get_state_names(states)
