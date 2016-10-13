@@ -1,5 +1,5 @@
 library(shinyjs)
-shinyUI(
+function(request) {
   fluidPage(
     lang = "en-US",
     useShinyjs(),
@@ -379,7 +379,7 @@ shinyUI(
           column(
             3, 
             offset = 3,
-            downloadButton("saveButton", "Save model")
+            bookmarkButton()
           )
         )
       ),
@@ -394,5 +394,4 @@ shinyUI(
       )
     )
   )
-)
-
+}
