@@ -17,6 +17,8 @@
 #' @importFrom lazyeval as.lazy_dots
 #' @importFrom lazyeval lazy_eval
 #' 
+#' @importFrom pryr standardise_call
+#' 
 #' @importFrom utils head
 #' @importFrom utils modifyList
 #' @importFrom utils globalVariables
@@ -29,6 +31,7 @@
 #' @importFrom stats qlnorm
 #' @importFrom stats qnorm
 #' @importFrom stats terms
+#' @importFrom stats setNames
 #' 
 #' @importFrom graphics par
 #' 
