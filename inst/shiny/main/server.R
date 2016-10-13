@@ -59,7 +59,7 @@ searchCountry <- function(n, input){
   )
 }
 
-show_module <- function(module, edit, n, input, values){
+show_module <- function(module, edit, n, input, values, localValues){
   if (edit)
     values$moduleEdit <- TRUE
   else
@@ -89,7 +89,10 @@ show_module <- function(module, edit, n, input, values){
       column(2, strong("Country"))
     )
   } else if (module == "survival"){
-      observe({
+    if (!sapply(observe_show_module_survival[n + 1], is.null)){
+      observe_show_module_survival[[n + 1]]$destroy()
+    }
+    observe_show_module_survival[[n + 1]] <<- observe({
         if (edit){
           prefix <- "#editingSurvival"
           suffix <- ""
@@ -136,7 +139,10 @@ show_module <- function(module, edit, n, input, values){
           column(2, strong("Lambda"))
         )
   } else if (module == "timedep"){
-       observe({
+    if (!sapply(observe_show_module_timedep[n + 1], is.null)){
+      observe_show_module_timedep[[n + 1]]$destroy()
+    }
+    observe_show_module_timedep[[n + 1]] <<- observe({
         if (edit){
           prefix <- "#editingTimedep"
           suffix <- ""
@@ -183,23 +189,7 @@ show_module <- function(module, edit, n, input, values){
                        )
                        )
             )
-            if (edit){ # to avoid duplicate creation of the observer
-            observeEvent(input[[paste0("timedepNew", n)]], {
-              if (is.null(values[[paste0("nTimedepNC", n)]]))
-                values[[paste0("nTimedepNC", n)]] <- 1
-              else
-                values[[paste0("nTimedepNC", n)]] <- values[[paste0("nTimedepNC", n)]] + 1
-              i <- values[[paste0("nTimedepNC", n)]]
-              insertUI(selector = paste0("#timedepNC", n), ui=
-                         fluidRow(
-                           column(4, textInput(paste0("timedepValueNC", n, i), NULL, "")),
-                           column(4, numericInput(paste0("timedepStart", n, i), NULL, input[[paste0("timedepEnd", n, values[[paste0("nTimedepNC", n)]] -1)]] + 1)),
-                           column(4, numericInput(paste0("timedepEnd", n, i), NULL, ""))
-                         )
-                    )
-            })
-          }
-            
+            localValues$loaded <- TRUE
           } else {
             removeUI(paste0(selectorBody, " .C"))
             removeUI(paste0(selectorTitle, " .C"))
@@ -256,7 +246,7 @@ show_module <- function(module, edit, n, input, values){
 }
 
 
-insert_module_line <-function(module, input, values){
+insert_module_line <-function(module, input, values, localValues){
   n <- values[[paste0("n", upFirst(module))]]
   req(n > 0)
   lapply(seq_len(n)-1, function(i){
@@ -267,28 +257,64 @@ insert_module_line <-function(module, input, values){
   
   lapply(seq_len(n)-1, function(i){
     insertUI("#allModules", ui=
-               show_module(module, FALSE, i, input, values)
+               show_module(module, FALSE, i, input, values, localValues)
     )
+
   })
 }
+
+
+insertTimedepNC <- function(input, values){
+  nTimedep <- values$nTimedep - 1
+  isolate({
+  if (nTimedep >= 0){
+    if (!is.null(values[[paste0("nTimedepNC", nTimedep)]])){
+      lapply(seq_len(values[[paste0("nTimedepNC", nTimedep)]]), function(i){
+        removeUI(paste0("#timedepValueNC", nTimedep, i), multiple=TRUE)
+        removeUI(paste0("#timedepStart", nTimedep, i), multiple=TRUE)
+        removeUI(paste0("#timedepEnd", nTimedep, i), multiple=TRUE)
+      })
+      lapply(0:nTimedep, function(n){
+        lapply(seq_len(values[[paste0("nTimedepNC", n)]]), function(i){
+          insertUI(selector = paste0("#newParam", n), ui =
+                     fluidRow(
+                       column(4, textInput(paste0("timedepValueNC", n, i), NULL, ifelse (!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], ""))),
+                       column(4, numericInput(paste0("timedepStart", n, i), NULL, ifelse (!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]], ""))),
+                       column(4, numericInput(paste0("timedepEnd", n, i), NULL, ifelse (!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], "")))
+                     )
+          )
+      })
+
+      })
+        
+    }
+  }
+  })
+}
+
 
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0)
   loadedValues <- reactiveValues(loaded = 0, SP1 = 0, SP2 = 0, TM1 = 0, TM2 = 0, GP = 0, DSA = 0, nameStates = 0, nameStateVariables = 0, nameStrategies = 0)
-  
+  localValues <- reactiveValues(loaded = FALSE)
+
+
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
     sapply(nameValues, function(x){
       state$values[[x]] <- values[[x]]
     })
   })
+  
+
   # Restore extra values from state$values when we restore
   onRestore(function(state) {
-    nameValues <- names(reactiveValuesToList(values))
+    nameValues <- ls(state$values)
     sapply(nameValues, function(x){
       values[[x]] <- state$values[[x]]
     })
   })
+  
   setBookmarkExclude(
     c(
       paste0(MODULES, "OK"),
@@ -296,6 +322,56 @@ shinyServer(function(input, output, session) {
       unname(MODULES)
     )
   )
+  
+  
+  #observe_nTimedep <- NULL
+  observe_timedepNew <- list()
+  
+  # observe({
+  #   values$nTimedep
+  #   isolate({
+  #   if(!is.null(observe_nTimedep)){
+  #     observe_nTimedep$destroy()
+  #   }
+
+    observe_nTimedep <<- observe({
+      lapply(0:values$nTimedep, function(n){
+        isolate({
+          if (sapply(observe_timedepNew[n + 1], is.null)){ #I would have prefered : if (is.null(observe_timedepNew[[n+1]]))
+            observe_timedepNew[[n + 1]] <<- observeEvent(input[[paste0("timedepNew", n)]], {
+              if (is.null(values[[paste0("nTimedepNC", n)]]))
+                values[[paste0("nTimedepNC", n)]] <- 1
+              else 
+                values[[paste0("nTimedepNC", n)]] <- values[[paste0("nTimedepNC", n)]] + 1
+            })
+          }
+        })
+      })
+    }) 
+  #})
+  #})
+  
+  
+observe({
+  req(localValues$loaded)
+      lapply(0:values$nTimedep, function(n) {
+        if (!is.null(values[[paste0("nTimedepNC", n)]]) && values[[paste0("nTimedepNC", n)]] > 0){
+          isolate({
+          lapply(seq_len(values[[paste0("nTimedepNC", n)]]), function(i){
+              removeUI(paste0("#timedepValueNCLine", n, i), multiple=TRUE) #Remove then insert is suboptimal, but works. Reactivity...
+              insertUI(selector = paste0("#timedepNC", n), ui=
+                         fluidRow(id = paste0("timedepValueNCLine", n, i),
+                                  column(4, textInput(paste0("timedepValueNC", n, i), NULL, ifelse (!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], ""))),
+                                  column(4, numericInput(paste0("timedepStart", n, i), NULL, ifelse (!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]], ""))),
+                                  column(4, numericInput(paste0("timedepEnd", n, i), NULL, ifelse (!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], "")))
+                         )
+              )
+          })
+          })
+        }
+      })
+    }, priority= - 1)
+  
   showStateParam <- function(nbStrat, input, values, click) {
     nbStates <- input$nbStates
     nbStateVariables <- input$nbStateVariables
@@ -498,7 +574,6 @@ shinyServer(function(input, output, session) {
     }
     loadedValues[["input"]] <- input
     loadedValues[["values"]] <- values
-    #print(values$nGlobalParameters)
   })
   
   output$saveButton <- downloadHandler(
@@ -940,13 +1015,13 @@ shinyServer(function(input, output, session) {
       for (mod in MODULES){
           removeUI(paste0("#editing", upFirst(mod)))
         }
-      insertUI("#addModule", ui=show_module(module, edit = TRUE, n = values[[paste0("n", upFirst(module))]], input, values))
+      insertUI("#addModule", ui=show_module(module, edit = TRUE, n = values[[paste0("n", upFirst(module))]], input, values, localValues))
     })
   })
 
 
   observe({
-    insert_module_line("equation", input, values)
+    insert_module_line("equation", input, values, localValues)
   })
 
   observeEvent(input$equationOK, {
@@ -954,48 +1029,28 @@ shinyServer(function(input, output, session) {
     values$nEquation <- values$nEquation + 1
   })
   observe({
-    insert_module_line("rgho", input, values)
+    insert_module_line("rgho", input, values, localValues)
   })
   observeEvent(input$rghoOK, {
     removeUI("#editingRgho")
     values$nRgho <- values$nRgho + 1
   })
   observe({
-    insert_module_line("survival", input, values)
+    insert_module_line("survival", input, values, localValues)
   })
   observeEvent(input$survivalOK, {
     removeUI("#editingSurvival")
     values$nSurvival <- values$nSurvival + 1
   })
-  
   observe({
-    insert_module_line("timedep", input, values)
+    values[["nTimedep"]]
+    isolate(insert_module_line("timedep", input, values, localValues))
   })
+  
   observeEvent(input$timedepOK, {
     removeUI("#editingTimedep")
-    # insertUI("#allModules", ui=
-    #            show_module("timedep", FALSE, values$nTimedep, input, values)
-    # )
-    values$insertedNC <- TRUE
-    
+    n <- values$nTimedep
+    values$nTimedep <- n + 1
   }) 
-  
-  observeEvent(values$insertedNC, {#cannot use 2 imbricated insertUI in the same observer, I don't understand why : insertUI doesn't seem to recognize paste0("#timedepNC", n)
-    req(values$insertedNC) #only when TRUE
-    n <-  values$nTimedep
-    if (!is.null(values[[paste0("nTimedepNC", n)]])){
-      for(i in seq_len(values[[paste0("nTimedepNC", n)]])){
-        insertUI(selector = paste0("#timedepNC", n), ui =
-                   fluidRow(
-                     column(4, textInput(paste0("timedepValueNC", n, i), NULL, ifelse (!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], ""))),
-                     column(4, numericInput(paste0("timedepStart", n, i), NULL, ifelse (!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]], ""))),
-                     column(4, numericInput(paste0("timedepEnd", n, i), NULL, ifelse (!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], "")))
-                   )
-        )
-      }
-    }
-    values$nTimedep <- values$nTimedep + 1
-    values$insertedNC <- FALSE
-  })
 })
 
