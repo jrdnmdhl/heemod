@@ -8,8 +8,7 @@ library(rgho)
 
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0)
-  localValues <- reactiveValues(loaded = FALSE)
-
+  localValues <- reactiveValues(loaded = FALSE, updatedState = FALSE, updatedTM = FALSE, updatedSP = FALSE)
 
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
@@ -23,6 +22,24 @@ shinyServer(function(input, output, session) {
     sapply(nameValues, function(x){
       values[[x]] <- state$values[[x]]
     })
+    localValues$currentTab <- input$main
+    updateTabsetPanel(session, "main", "States" )
+    delay(1, localValues$updatedState <- TRUE)
+  })
+  
+  observe({
+    req(localValues$updatedState)
+    updateTabsetPanel(session, "main", "Transition Matrix" )
+    delay(1, localValues$updatedTM <- TRUE)
+  })
+  observe({
+    req(localValues$updatedTM)
+    updateTabsetPanel(session, "main", "State Parameters" )
+    delay(1, localValues$updatedSP <- TRUE)
+  })
+  observe({
+    req(localValues$updatedSP)
+    updateTabsetPanel(session, "main", localValues$currentTab)
   })
   
   setBookmarkExclude(
@@ -101,8 +118,6 @@ shinyServer(function(input, output, session) {
   
   output$nameStates <- renderUI({
     req(input$nbStates)
-    
-    
     lapply(
       seq_len(input$nbStates),
       function(i) {
@@ -410,7 +425,7 @@ shinyServer(function(input, output, session) {
             id = "tabnewParam",
             lapply(seq_along(MODULES), function(i){
               fluidRow(
-                actionLink(MODULES[i], names(MODULES)[i])
+                actionLink(MODULES[i], names(MODULES)[i], class = "btn btn-link")
                 )
             })
           )
@@ -440,12 +455,22 @@ shinyServer(function(input, output, session) {
     observeEvent(input[[module]], {
       for (mod in MODULES){
           removeUI(paste0("#editing", upFirst(mod)))
+      }
+      if (module ==  "rgho" && (is.null(REGION) | is.null(COUNTRY))){
+        try({
+          REGION <<- get_gho_codes(dimension = "REGION")
+          COUNTRY <<- get_gho_codes(dimension="COUNTRY")
+        })
+        if (is.null(REGION) | is.null(COUNTRY)){
+          showNotification("GHO server is not reacheable for the moment. Please try again later.", duration = 5, type = "warning")
+          #div(class = "alert alert-warning", "WHO is not reacheable for the moment")
         }
+      }
+      else
       insertUI("#addModule", ui=show_module(module, edit = TRUE, n = values[[paste0("n", upFirst(module))]], input, values, localValues))
     })
   })
-
-
+  
   observe({
     insert_module_line("equation", input, values, localValues)
   })
