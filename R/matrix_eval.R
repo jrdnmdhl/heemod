@@ -6,24 +6,24 @@
 #' This function is called by \code{\link{eval_matrix}} and 
 #' should not be used directly.
 #' 
-#' Checks whether all rows sum to 1 and all probabilities
+#' Checks whether all rows sum to 1 and all probabilities 
 #' are between 0 and 1.
 #' 
 #' @param x a matrix.
-#' @param ... A list of informations to print when checks 
-#'   fail, for debugging purposes.
 #'   
-#' @return NULL
+#' @return \code{NULL}
 #'   
-check_matrix <- function(x, ...) {
-  info <- list(...)
+#' @keywords internal
+check_matrix <- function(x) {
+  if (! isTRUE(all.equal(
+    range(rowSums(x, dims = 2)),
+    c(1, 1)))) {
+    stop("Not all transition matrix rows sum to 1.")
+  }
   
-  stopifnot(
-    isTRUE(
-      all.equal(rowSums(x), rep(1, nrow(x)))
-    ),
-    all(x >= 0 & x <= 1)
-  )
+  if (! all(x >= 0 & x <= 1)) {
+    stop("Some transition probabilities are outside the interval [0 - 1].")
+  }
 }
 
 #' Evaluate Markov Model Transition Matrix
@@ -32,47 +32,60 @@ check_matrix <- function(x, ...) {
 #' 
 #' Runs checks on the transition matrix during evaluation.
 #' 
+#' This functions has been heavily optimized, and thus can
+#' be difficult to read. Good luck...
+#' 
 #' @param x an \code{uneval_matrix} object.
 #' @param parameters an \code{eval_parameters} object.
 #'   
 #' @return An \code{eval_matrix} object (actually a list of 
-#'   transition matrix, one per cycle).
+#'   transition matrices, one per cycle).
+#'   
+#' @keywords internal
 eval_matrix <- function(x, parameters) {
-  
   tab_res <- mutate_(parameters, C = -pi, .dots = x)[names(x)]
   
   n <- get_matrix_order(x)
   
-  f <- function(...) {
-    res <- matrix(c(...),
-                  byrow = TRUE,
-                  nrow = n)
-    posC <- res == -pi
-    
-    stopifnot(
-      rowSums(posC) <= 1
-    )
-    res[posC] <- 0
-    valC <- 1 - rowSums(res)[which(posC, arr.ind = TRUE)[, 1]]
-    res[posC] <- valC
-    
-    check_matrix(res)
-    list(res)
+  array_res <- array(unlist(tab_res), dim = c(nrow(tab_res), n, n))
+  # possible optimisation
+  # dont transpose
+  # but tweak dimensions in replace_C
+  for(i in 1:nrow(tab_res)){
+    array_res[i,,] <- t(array_res[i,,])
   }
   
-  # bottleneck!
+  array_res <- replace_C(array_res)
   
-  res <- unlist(
-    dplyr::do(
-      dplyr::rowwise(tab_res),
-      res = f(unlist(.))
-    )$res,
-    recursive = FALSE
+  check_matrix(array_res)
+  
+  structure(
+    split_along_dim(array_res, 1),
+    class = c("eval_matrix", "list"),
+    state_names = get_state_names(x)
   )
+}
+
+split_along_dim <- function(a, n) {
+  # could be maybe optimized?
+  setNames(lapply(
+    split(a, arrayInd(seq_along(a), dim(a))[, n]),
+    array, dim = dim(a)[-n], dimnames(a)[-n]),
+    dimnames(a)[[n]])
+}
+
+replace_C <- function(x) {
+  posC <- x == -pi
   
-  structure(res,
-            class = c("eval_matrix", class(res)),
-            state_names = get_state_names(x))
+  if (! all(rowSums(posC, dims = 2) <= 1)) {
+    stop("Only one 'C' is allowed per matrix row.")
+  }
+  
+  x[posC] <- 0
+  
+  valC <- 1 - rowSums(x, dims = 2)[which(posC, arr.ind = TRUE)[, -3]] 
+  x[posC] <- valC
+  x
 }
 
 get_state_names.eval_matrix <- function(x, ...){

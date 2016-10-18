@@ -1,16 +1,19 @@
 # Sample .travis.yml for R projects
 
-language: R
+language: r
 sudo: false
 cache: packages
-
-env:
-  matrix:
-    - RVERSION=release
+r:
+  - oldrel
+  - release
+  - devel
 
 branches:
   only:
     - master
+    - devel
+    - /^hotfix\/.*$/
+    - /^release\/.*$/
 
 r_packages:
   - covr

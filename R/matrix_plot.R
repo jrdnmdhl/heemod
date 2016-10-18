@@ -1,6 +1,6 @@
 to_char_uneval_matrix <- function(x) {
-  ex <- unlist(lapply(x, function(y) deparse(y$expr)))
-  ex[ex == "C"] <- ""
+  ex <- unlist(lapply(x, function(y) deparse(y$expr, width.cutoff = 500)))
+  ex[ex == "0"] <- ""
   matrix(ex,
          byrow = TRUE,
          ncol = get_matrix_order(x),
@@ -48,8 +48,10 @@ plot.uneval_matrix <- function(x, relsize = .75,
   op <- graphics::par(mar = c(0, 0, 0, 0))
   res <- to_char_uneval_matrix(x)
   diagram::plotmat(
-    t(res[rev(seq_len(nrow(res))),rev(seq_len(nrow(res)))]),
+    t(res[rev(seq_len(nrow(res))),
+          rev(seq_len(nrow(res)))]),
     relsize = relsize, shadow.size = shadow.size,
+    absent = "",
     latex = latex, ...
   )
   graphics::par(op)

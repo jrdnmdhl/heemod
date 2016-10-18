@@ -2,13 +2,22 @@
 % Please edit documentation in R/sensitivity_define.R
 \name{define_sensitivity}
 \alias{define_sensitivity}
+\alias{define_sensitivity_}
 \title{Define a Sensitivity Analysis}
 \usage{
 define_sensitivity(...)
+
+define_sensitivity_(par_names, low_dots, high_dots)
 }
 \arguments{
-\item{...}{A named list of min and max values that
-parameters will take.}
+\item{...}{A list of parameter names and min/max values 
+of the form \code{var1, min(var1), max(var1), var2,
+min(var2), max(var2), ...}.}
+
+\item{par_names}{String vector of parameter names.}
+
+\item{low_dots, high_dots}{Used to work around
+non-standard evaluation.}
 }
 \value{
 A \code{sensitivity} object.
@@ -17,15 +26,11 @@ A \code{sensitivity} object.
 Define parameter variations for a Markov model 
 sensitivity analysis.
 }
-\details{
-Parameter variations windows are given as length 2 vector
-of the form \code{c(min, max)}.
-}
 \examples{
 
 define_sensitivity(
-  a = c(10, 45),
-  b = c(.5, 1.5)
+  a, 10, 45,
+  b, .5, 1.5
 )
 
 }

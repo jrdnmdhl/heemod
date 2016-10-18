@@ -1,3 +1,53 @@
+# heemod devel
+
+## New features
+
+  * Values and probabilities can depend on state time with `state_cycle`, allowing to reproduce the results of microsimulations.
+  * `define_sensitivity()` now accepts any expression as input, and can call references to model parameteres.
+  * Discount rates can now be specified as parameters (allows for rates to be modified in DSA & PSA).
+  * Any state value can be plotted.
+  * Additional output: csv files for many of the tabular results.
+  
+## Bugfixes
+
+  * Edges where P=0 are not plotted anymore for transition matrices.
+  * There used to be a potential error when you wanted to save output but there had been no psa.
+
+# heemod 0.4.0
+
+## New features
+
+  * `update()` for heterogeneity analysis and to compute population-level values, with vignette.
+  * `run_models_tabular()` to import models from tabular input, with vignette.
+  * `look_up()` to look up values from external data.
+  * Added option to pool female and male mortality rates in WHO data.
+  * Counting method now defaults to life-table.
+  
+## Enhancements
+
+  * `plot_sensitivity()` now plots by default the widest bar on top.
+  * Convenience functions for converting rates to probabilities.
+  * Models can be run without state values, to compute counts only.
+  * Much more informative error messages.
+  * Objects can be converted to the `R` code to generate them (same idea as `dput()`, but easier to read).
+  * New options `heemod.verbose` and `heemod.memotime`.
+  * More informative messages, especially in verbose mode.
+  * Use WHO data cached localy in case of connection problems.
+  * New functions: `get_counts()` and `get_init()` to get state membership counts.
+  * Smart sex code conversion for `get_who_mr()`.
+
+## Bug fixes
+
+  * _really_ fixed problem when the argument to `discount()` was not defined as a parameter.
+  
+## Changes
+
+  * `eval_model_newdata()`, the function behind resampling and sensitivity analysis now returns list-variables.
+  
+## Acknowledments
+
+  * Thanks to [Matthew Wiener](https://github.com/MattWiener), [Zdenek Kabat](https://github.com/ZdenekKabat) and [Vojtech Filipec](https://github.com/vojtech-filipec) for their great contributions to this update.
+
 # heemod 0.3.3
 
 ## New features
@@ -7,7 +57,8 @@
 ## Bug fixes
 
   * fixed problem when argument to `discount()` was not defined as a parameter.
-  * corrected several errors in the vignettes.
+  * corrected several errors in the vignettes (thanks to Michael Schenkenberg from SBU, Stockholm, Sweden).
+  * updated mortality rate tests to reflect GHO database update.
 
 # heemod 0.3.2
 
