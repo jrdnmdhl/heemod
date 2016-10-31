@@ -22,11 +22,9 @@
       <h1>
 <a id="heemod---health-economic-evaluation-modelling" class="anchor" href="#heemod---health-economic-evaluation-modelling" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>heemod - Health Economic Evaluation MODelling</h1>
 
-<p><code>heemod</code> is an <code>R</code> toolset for health economic evaluation modelling. It aims to provide a simple and consistent interface for Markov models specification and comparison. Non-homogeneous Markov models (with time varying properties) are supported.</p>
+<p><code>heemod</code> is an <code>R</code> toolset for health economic evaluation modelling. It aims to provide a simple and consistent interface for Markov models specification and comparison (for decision trees or cohort simulation). Non-homogeneous Markov models (with time varying properties) are supported.</p>
 
 <p>Most of the analyses presented in <a href="http://ukcatalogue.oup.com/product/9780198526629.do">Decision Modelling for Health Economic Evaluation</a> can be performed with <code>heemod</code>. See <a href="https://cran.r-project.org/web/packages/heemod/vignettes/i-reproduction.html">this page</a> for an exact reproduction of the analyses from the book.</p>
-
-<p>This package is still a <em>beta</em> version.</p>
 
 <p>You can install:</p>
 
@@ -49,12 +47,13 @@
 <li>Graphical user interface with <code>shiny</code>.</li>
 <li>Time-varying transition probabilities.</li>
 <li>Time-varying values attached to states.</li>
-<li>Heterogeneity analysis.</li>
+<li>Microsimulation-like models.</li>
 <li>Probabilistic uncertainty analysis.</li>
 <li>Deterministic sensitivity analysis.</li>
-<li>Multiple state membership correction methods (life-table, half-cycle...).</li>
+<li>Multiple state membership correction methods (life-table, half-cycle, etc.).</li>
 <li>Demographic analysis to compute population-level results.</li>
 <li>Heterogeneity analysis.</li>
+<li>Parallel computing support.</li>
 </ul>
 
 <h2>
@@ -82,21 +81,14 @@
 <h2>
 <a id="devs" class="anchor" href="#devs" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Devs</h2>
 
-<p><a href="http://www.urc-eco.fr/Kevin-ZARCA,402">Kevin Zarca</a> and <a href="https://pierucci.github.io/">Antoine Filipović-Pierucci</a>.</p>
-
-<h1 align="center">
-<a id="----" class="anchor" href="#----" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>
-<a href="http://www.urc-eco.fr">
-    <img width="220" src="images/logo.png" alt="">
-</a>
-</h1>
+<p><a href="http://www.urc-eco.fr/Kevin-ZARCA,402">Kevin Zarca</a> and <a href="https://pierucci.org">Antoine Filipović-Pierucci</a>.</p>
 
 <h2>
 <a id="contributors" class="anchor" href="#contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contributors</h2>
 
 <ul>
 <li><a href="https://github.com/MattWiener">Matthew Wiener</a></li>
-<li><a href="https://github.com/ZdenekKabat">Zdenek Kabat</a></li>
+<li><a href="https://github.com/zkabat">Zdenek Kabat</a></li>
 <li><a href="https://github.com/vojtech-filipec">Vojtech Filipec</a></li>
 </ul>
 
