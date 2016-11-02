@@ -215,26 +215,16 @@ shinyServer(function(input, output, session) {
     isolate(values$nGlobalParameters <- values$nGlobalParameters + 1)
   })
   
-  output$globalParameters <- renderUI({
-    req(input$nbStrategies)
-    values$nGlobalParameters
-    showGlobalParameters(input, values)
-  })
-  
-  #   observeEvent(input$addDeterministic,{
-  #     isolate(values$nbDeterministic <- values$nbDeterministic + 1)
-  #   })
-  
   output$DSA <- renderUI({
     req(input$nbStates, input$nbStrategies)
     dsa <- lapply(seq_len(values$nGlobalParameters), function(i){
-      isolate({
+      #isolate({
         tags$tr(
-          tags$td(disabled(textInput(paste0("recGlobalParamName", i), NULL, ifelse(!is.null(input[[paste0("globalParamName", i)]]), input[[paste0("globalParamName", i)]], ""), width="100%"))),
+          tags$td(selectInput(paste0("recGlobalParamName", i), NULL, choices = get_names_SA(input, values), width="100%")),
           tags$td(numericInput(paste0("minValue", i), NULL, ifelse(!is.null(input[[paste0("minValue", i)]]), input[[paste0("minValue", i)]], ""), width="100%")),
           tags$td(numericInput(paste0("maxValue", i), NULL, ifelse(!is.null(input[[paste0("maxValue", i)]]), input[[paste0("maxValue", i)]], ""), width="100%"))
         )
-      })
+      #})
     })
     
     tagList(

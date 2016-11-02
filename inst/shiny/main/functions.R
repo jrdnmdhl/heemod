@@ -1,3 +1,27 @@
+get_names_SA <- function(input, values){
+  equation <- sapply(seq_len(values$nEquation)-1, function(i){
+    input[[paste0("equationName", i)]]
+  })
+  rgho <- sapply(seq_len(values$nRgho)-1, function(i){
+    input[[paste0("rghoName", i)]]
+  })
+  survival <- sapply(seq_len(values$nSurvival)-1, function(i){
+    c(
+      paste(input[[paste0("survivalName", i)]], "lambda"),
+      if (input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
+    )
+  }) %>% unlist %>% as.vector
+  timedep <- sapply(seq_len(values$nTimedep)-1, function(i){
+    if (input[[paste0("timedepType", i)]] == "constant") {
+      input[[paste0("timedepName", i)]]
+    } else {
+        sapply(0:values[[paste0("nTimedepNC", i)]], function(j){
+          sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
+        }) %>% unlist %>% as.vector
+      }
+  }) %>% unlist %>% as.vector
+  return(c(equation, rgho, survival, timedep))
+}
 
 showStateParam <- function(nbStrat, input, values, click) {
   nbStates <- input$nbStates
@@ -148,42 +172,6 @@ showTransMatrix <- function(nbStrat, input, values, click) {
     )
   }
 }
-
-showGlobalParameters <- function(input, values) {
-  n <- values$nGlobalParameters
-  a <- tags$table(
-    tags$tr(
-      tags$th(style='text-align:center', "Variable name"),
-      tags$th(style='text-align:center', "Value")
-    ),
-    lapply(
-      seq_len(n),
-      function(i) {
-        tags$tr(
-          isolate(tags$td(
-            textInput(
-              paste0("globalParamName",i),
-              label = NULL,
-              value = input[[paste0("globalParamName",i)]],
-              width="100%"))),
-          isolate(tags$td(
-            textInput(
-              paste0("globalParamValue",i),
-              label = NULL,
-              value =  ifelse(!is.null(input[[paste0("globalParamValue", i)]]), input[[paste0("globalParamValue",i)]], ""),
-              width="100%")))
-        )
-        
-      })
-  )
-  
-  tagList(
-    a,
-    actionButton("addParametersGP", "Add a new variable")
-  )
-}
-
-
 
 searchRegion <- function(n, input){
   regionNames <- REGION %>%
