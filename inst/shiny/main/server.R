@@ -7,7 +7,7 @@ library(rgho)
 
 
 shinyServer(function(input, output, session) {
-  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0)
+  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nDeterministic = 0)
   localValues <- reactiveValues(loaded = FALSE, updatedState = FALSE, updatedTM = FALSE, updatedSP = FALSE)
 
   onBookmark(function(state) {
@@ -215,22 +215,56 @@ shinyServer(function(input, output, session) {
     isolate(values$nGlobalParameters <- values$nGlobalParameters + 1)
   })
   
+  
+  add_deterministic <- NULL
+  
   output$DSA <- renderUI({
-    req(input$nbStates, input$nbStrategies)
-    dsa <- lapply(seq_len(values$nGlobalParameters), function(i){
-      #isolate({
-        tags$tr(
-          tags$td(selectInput(paste0("recGlobalParamName", i), NULL, choices = get_names_SA(input, values), width="100%")),
-          tags$td(numericInput(paste0("minValue", i), NULL, ifelse(!is.null(input[[paste0("minValue", i)]]), input[[paste0("minValue", i)]], ""), width="100%")),
-          tags$td(numericInput(paste0("maxValue", i), NULL, ifelse(!is.null(input[[paste0("maxValue", i)]]), input[[paste0("maxValue", i)]], ""), width="100%"))
-        )
-      #})
-    })
+    choices <- get_names_SA(input, values)
+    req(length(choices) > 0)
     
+    ## Observer needed for bookmark and insertUI
+    observe({
+      req(values$nDeterministic > 0)
+      isolate({
+        if (!is.null(add_deterministic)) add_deterministic$destroy()
+        add_deterministic <<- observe({
+          values$nDeterministic
+          choices <- get_names_SA(input, values)
+          isolate({
+            lapply(seq_len(values$nDeterministic), function(i){
+              removeUI(paste0("#DSA_div",i))
+            })
+            lapply(seq_len(values$nDeterministic), function(i){
+              insertUI("#DSAtable",
+                       ui = show_DSA_div(input, values, choices, i)
+              )
+            })
+          })
+        })
+      })
+    })
+    ## End
+    
+    i = 0
     tagList(
-      tags$table(style="margin:0 auto;", tags$th("Variable name", style='text-align:center'), tags$th("Minimum value", style='text-align:center'), tags$th("Maximum value", style='text-align:center'), dsa),
-      fluidRow(column(3, offset = 5, actionButton("addDeterministic", "Add a deterministic value")))
+    column(id = "DSAtable", 12,
+           isolate(show_DSA_div(input, values, choices, i))
+      ),
+    column(12,
+    div(class="centerdiv",
+        actionButton("addDeterministic", "Add a deterministic value")
+    ))
     )
+  })
+  
+
+  
+
+  
+  
+  observeEvent(input$addDeterministic, {
+    values$nDeterministic <- values$nDeterministic + 1
+
   })
   
   output$outInit <- renderUI({

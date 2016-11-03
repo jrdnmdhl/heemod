@@ -22,6 +22,16 @@ function(request) {
         "-o-transform: rotate(45deg)",
         "-ms-transform: rotate(45deg)",
         "transform: rotate(45deg)"
+      ),
+      ".centerdiv" = c(
+        "display: -webkit-box",
+        "display: -moz-box",
+        "display: -ms-flexbox",
+        "display: -webkit-flex",
+        "display: flex",
+        "-ms-justify-content:center",
+        "-webkit-justify-content:center",
+        "justify-content:center"
       )
     )),
     navbarPage(

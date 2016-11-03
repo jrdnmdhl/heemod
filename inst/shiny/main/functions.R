@@ -1,3 +1,14 @@
+show_DSA_div <- function(input, values, choices, n){
+  var_name <- if (n == 0) "Variable name" else NULL
+  max_val <- if (n == 0) "Minimum value" else NULL
+  min_val <- if (n == 0) "Maximum value" else NULL
+  div(id = paste0("DSA_div",n), class="centerdiv",
+      selectInput(paste0("recGlobalParamName", n), var_name, choices = choices),
+      numericInput(paste0("minValue", n), max_val, ifelse(!is.null(input[[paste0("minValue", n)]]), input[[paste0("minValue", n)]], "")),
+      numericInput(paste0("maxValue", n), min_val, ifelse(!is.null(input[[paste0("maxValue", n)]]), input[[paste0("maxValue", n)]], ""))
+  )
+}
+
 get_names_SA <- function(input, values){
   equation <- sapply(seq_len(values$nEquation)-1, function(i){
     input[[paste0("equationName", i)]]
@@ -17,10 +28,17 @@ get_names_SA <- function(input, values){
     } else {
         sapply(0:values[[paste0("nTimedepNC", i)]], function(j){
           sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
-        }) %>% unlist %>% as.vector
+        }) %>% 
+        unlist %>% 
+        as.vector
       }
-  }) %>% unlist %>% as.vector
-  return(c(equation, rgho, survival, timedep))
+  }) %>% 
+    unlist %>% 
+    as.vector
+  return(
+    c(equation, rgho, survival, timedep) %>% 
+      sort
+    )
 }
 
 showStateParam <- function(nbStrat, input, values, click) {
