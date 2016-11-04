@@ -7,7 +7,7 @@ library(rgho)
 
 
 shinyServer(function(input, output, session) {
-  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nDeterministic = 0)
+  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nDeterministic = 0, nProbabilistic = 0)
   localValues <- reactiveValues(loaded = FALSE, updatedState = FALSE, updatedTM = FALSE, updatedSP = FALSE)
 
   onBookmark(function(state) {
@@ -215,10 +215,10 @@ shinyServer(function(input, output, session) {
     isolate(values$nGlobalParameters <- values$nGlobalParameters + 1)
   })
   
-  
   add_deterministic <- NULL
   
   output$DSA <- renderUI({
+    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     
@@ -256,17 +256,60 @@ shinyServer(function(input, output, session) {
     ))
     )
   })
-  
 
-  
-
-  
   
   observeEvent(input$addDeterministic, {
     values$nDeterministic <- values$nDeterministic + 1
 
   })
   
+  add_probabilistic <- NULL
+  
+  output$PSA <- renderUI({
+    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    choices <- get_names_SA(input, values)
+    req(length(choices) > 0)
+    
+    ## Observer needed for bookmark and insertUI
+    observe({
+      req(values$nProbabilistic > 0)
+      isolate({
+        if (!is.null(add_probabilistic)) add_probabilistic$destroy()
+        add_probabilistic <<- observe({
+          values$nProbabilistic
+          choices <- get_names_SA(input, values)
+          #isolate({
+            lapply(seq_len(values$nProbabilistic), function(i){
+              removeUI(paste0("#PSA_div", i))
+            })
+            lapply(seq_len(values$nProbabilistic), function(i){
+              insertUI("#PSAtable",
+                       ui = show_PSA_div(input, values, choices, i)
+              )
+            })
+          #})
+        })
+      })
+    })
+    ## End
+    
+    i = 0
+    tagList(
+      column(id = "PSAtable", 12,
+             show_PSA_div(input, values, choices, i)
+      ),
+      column(12,
+             div(class="centerdiv",
+                 actionButton("addProbabilistic", "Add a probabilistic value")
+             ))
+    )
+  })
+  
+  
+  observeEvent(input$addProbabilistic, {
+    values$nProbabilistic <- values$nProbabilistic + 1
+    
+  })
   output$outInit <- renderUI({
     #####
     req(

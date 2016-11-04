@@ -316,6 +316,12 @@ function(request) {
         )
       ),
       tabPanel(
+        "Probabilistic sensitivity analysis",
+        fluidRow(
+          uiOutput("PSA") 
+        )
+      ),
+      tabPanel(
         "Results",
         sidebarLayout(
           sidebarPanel(

@@ -1,11 +1,46 @@
+show_PSA_div <- function(input, values, choices, n){
+  # var_name <- if (n == 0) "Variable name" else NULL
+  # psa_distrib <- if (n == 0) "Distribution" else NULL
+  # psa_param <- if (n == 0) "Maximum value" else NULL
+  if (!is.null(input[[paste0("PSADistrib", n)]])){
+    psa_param1 <- switch (input[[paste0("PSADistrib", n)]],
+                          "Normal" = "Mean",
+                          "Lognormal" = "Mean",
+                          "Binomial" = "Prop",
+                          "Gamma" = "Mean",
+                          "Logitnormal" = "Mu"
+                          ) 
+    psa_param2 <- switch (input[[paste0("PSADistrib", n)]],
+                          "Normal" = "Standard Deviation",
+                          "Lognormal" = "Standard Deviation",
+                          "Binomial" = "Size",
+                          "Gamma" = "Standard Deviation",
+                          "Logitnormal" = "Sigma"
+    ) 
+  }
+  div(id = paste0("PSA_div", n), class="centerdiv",
+      selectInput(paste0("PSAGlobalParamName", n), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", n)]]), input[[paste0("PSAGlobalParamName", n)]], "")),
+      selectInput(paste0("PSADistrib", n), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", n)]]), input[[paste0("PSADistrib", n)]], character(0))),
+      if (!is.null(input[[paste0("PSADistrib", n)]]) && length(input[[paste0("PSADistrib", n)]]) > 0){
+        tagList(
+          numericInput(paste0("PSAParam1", n), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", n)]]), input[[paste0("PSAParam1", n)]], "")),
+          numericInput(paste0("PSAParam2", n), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", n)]]), input[[paste0("PSAParam2", n)]], ""))
+        )
+      },
+      if (!is.null(input[[paste0("PSADistrib", n)]]) && input[[paste0("PSADistrib", n)]] == "Lognormal"){
+        checkboxInput(paste0("PSALogscale", n), "Check if mean and sd are on the log scale", value = ifelse(!is.null(input[[paste0("PSALogscale", n)]]), input[[paste0("PSALogscale", n)]], FALSE))
+      }
+  )
+}
+
 show_DSA_div <- function(input, values, choices, n){
   var_name <- if (n == 0) "Variable name" else NULL
   max_val <- if (n == 0) "Minimum value" else NULL
   min_val <- if (n == 0) "Maximum value" else NULL
   div(id = paste0("DSA_div",n), class="centerdiv",
-      selectInput(paste0("recGlobalParamName", n), var_name, choices = choices),
-      numericInput(paste0("minValue", n), max_val, ifelse(!is.null(input[[paste0("minValue", n)]]), input[[paste0("minValue", n)]], "")),
-      numericInput(paste0("maxValue", n), min_val, ifelse(!is.null(input[[paste0("maxValue", n)]]), input[[paste0("maxValue", n)]], ""))
+      selectInput(paste0("DSAGlobalParamName", n), var_name, choices = choices),
+      numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
+      numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], ""))
   )
 }
 
@@ -37,6 +72,7 @@ get_names_SA <- function(input, values){
     as.vector
   return(
     c(equation, rgho, survival, timedep) %>% 
+      unlist %>% 
       sort
     )
 }
