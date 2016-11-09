@@ -1,11 +1,3 @@
-source("functions.R")
-source("interface.R")
-library(dplyr)
-library(Hmisc)
-library(heemod)
-library(rgho)
-
-
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nDeterministic = 0, nProbabilistic = 0)
   localValues <- reactiveValues(loaded = FALSE, updatedState = FALSE, updatedTM = FALSE, updatedSP = FALSE)
@@ -26,7 +18,7 @@ shinyServer(function(input, output, session) {
     updateTabsetPanel(session, "main", "States" )
     delay(1, localValues$updatedState <- TRUE)
   })
-  
+
   observe({
     req(localValues$updatedState)
     updateTabsetPanel(session, "main", "Transition Matrix" )
@@ -259,7 +251,14 @@ shinyServer(function(input, output, session) {
 
   
   observeEvent(input$addDeterministic, {
+    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    choices <- get_names_SA(input, values)
+    req(length(choices) > 0)
     values$nDeterministic <- values$nDeterministic + 1
+    
+    insertUI("#DSAtable",
+             ui = show_DSA_div(input, values, choices,  values$nDeterministic)
+    )
 
   })
   
@@ -305,11 +304,30 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  
-  observeEvent(input$addProbabilistic, {
+    observeEvent(input$addProbabilistic, {
     values$nProbabilistic <- values$nProbabilistic + 1
     
   })
+    
+  output$addMultinomial <- renderUI({
+    choices <- get_names_SA(input, values)
+    lapply(0:values$nProbabilistic, function(i){
+      req(input[[paste0("PSADistrib", i)]])
+      if (input[[paste0("PSADistrib", i)]] == "Multinomial"){
+        req(input[[paste0("PSAParam1", i)]])
+        lapply(seq_len(input[[paste0("PSAParam1", i)]]), function(j){
+          fluidRow(
+            column(4, 
+            if (j == 1) textInput(paste0("PSAMultinomName", i, j), label = "Parameter", value = input[[paste0("PSAGlobalParamName", i)]]) %>% disabled
+            else  selectInput(paste0("PSAMultinomName", i, j), label = "Parameter", choices = choices, selected = ifelse(!is.null(input[[paste0("PSAMultinomName", i, j)]]), input[[paste0("PSAMultinomName", i, j)]], ""))
+          ),
+          column(4, numericInput("PSAMultinomValue", "Value", 0))
+          )
+        })
+      }
+    })
+  })
+  
   output$outInit <- renderUI({
     #####
     req(

@@ -8,7 +8,8 @@ show_PSA_div <- function(input, values, choices, n){
                           "Lognormal" = "Mean",
                           "Binomial" = "Prop",
                           "Gamma" = "Mean",
-                          "Logitnormal" = "Mu"
+                          "Logitnormal" = "Mu",
+                          "Multinomial" = "Nb parameters"
                           ) 
     psa_param2 <- switch (input[[paste0("PSADistrib", n)]],
                           "Normal" = "Standard Deviation",
@@ -18,17 +19,21 @@ show_PSA_div <- function(input, values, choices, n){
                           "Logitnormal" = "Sigma"
     ) 
   }
-  div(id = paste0("PSA_div", n), class="centerdiv",
-      selectInput(paste0("PSAGlobalParamName", n), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", n)]]), input[[paste0("PSAGlobalParamName", n)]], "")),
-      selectInput(paste0("PSADistrib", n), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", n)]]), input[[paste0("PSADistrib", n)]], character(0))),
+  fluidRow(id = paste0("PSA_div", n),
+      column(2, selectInput(paste0("PSAGlobalParamName", n), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", n)]]), input[[paste0("PSAGlobalParamName", n)]], ""))),
+      column(2, selectInput(paste0("PSADistrib", n), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", n)]]), input[[paste0("PSADistrib", n)]], character(0)))),
       if (!is.null(input[[paste0("PSADistrib", n)]]) && length(input[[paste0("PSADistrib", n)]]) > 0){
+        isolate(
         tagList(
-          numericInput(paste0("PSAParam1", n), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", n)]]), input[[paste0("PSAParam1", n)]], "")),
-          numericInput(paste0("PSAParam2", n), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", n)]]), input[[paste0("PSAParam2", n)]], ""))
+          column(2, numericInput(paste0("PSAParam1", n), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", n)]]), input[[paste0("PSAParam1", n)]], ""))),
+          if (input[[paste0("PSADistrib", n)]] != "Multinomial"){
+            column(2, numericInput(paste0("PSAParam2", n), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", n)]]), input[[paste0("PSAParam2", n)]], "")))
+          } else column(6, uiOutput("addMultinomial"))
+        )
         )
       },
       if (!is.null(input[[paste0("PSADistrib", n)]]) && input[[paste0("PSADistrib", n)]] == "Lognormal"){
-        checkboxInput(paste0("PSALogscale", n), "Check if mean and sd are on the log scale", value = ifelse(!is.null(input[[paste0("PSALogscale", n)]]), input[[paste0("PSALogscale", n)]], FALSE))
+        column(4, style = "margin-top:20px", checkboxInput(paste0("PSALogscale", n), "Check if mean and sd are on the log scale", value = ifelse(!is.null(input[[paste0("PSALogscale", n)]]), input[[paste0("PSALogscale", n)]], FALSE)))
       }
   )
 }
