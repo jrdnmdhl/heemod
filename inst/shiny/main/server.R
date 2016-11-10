@@ -1,6 +1,6 @@
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nDeterministic = 0, nProbabilistic = 0)
-  localValues <- reactiveValues(loaded = FALSE, updatedState = FALSE, updatedTM = FALSE, updatedSP = FALSE)
+  localValues <- reactiveValues(loaded = FALSE, restored = FALSE)
 
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
@@ -16,24 +16,20 @@ shinyServer(function(input, output, session) {
     })
     localValues$currentTab <- input$main
     updateTabItems(session, "main", "States" )
-    delay(1, localValues$updatedState <- TRUE)
-  })
-
-  observe({
-    req(localValues$updatedState)
-    updateTabItems(session, "main", "Transition Matrix" )
-    delay(1, localValues$updatedTM <- TRUE)
-  })
-  observe({
-    req(localValues$updatedTM)
-    updateTabItems(session, "main", "State Parameters" )
-    delay(1, localValues$updatedSP <- TRUE)
-  })
-  observe({
-    req(localValues$updatedSP)
-    updateTabItems(session, "main", localValues$currentTab)
   })
   
+  onRestored(function(state) {
+    localValues$restored <- TRUE
+  })
+  
+  #Should the content of that observer be inside onRestored?
+  observe({ 
+    output_names <- names(outputOptions(output))
+    output_names <- output_names[-grep("debug", output_names)]
+    for (out in output_names){
+      outputOptions(output, out, suspendWhenHidden = FALSE)
+    }
+  })
   setBookmarkExclude(
     c(
       paste0(MODULES, "OK"),
@@ -310,6 +306,7 @@ shinyServer(function(input, output, session) {
   })
     
   output$addMultinomial <- renderUI({
+    req(values$nProbabilistic > 0)
     choices <- get_names_SA(input, values)
     lapply(0:values$nProbabilistic, function(i){
       req(input[[paste0("PSADistrib", i)]])
