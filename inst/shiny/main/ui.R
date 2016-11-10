@@ -1,172 +1,120 @@
 library(shinyjs)
+library(shinydashboard)
 function(request) {
-  fluidPage(
-    lang = "en-US",
-    useShinyjs(),
-    inlineCSS(list(
-      ".row-eq-height"  = c(
-        "display: -webkit-box",
-        "display: -webkit-flex",
-        "display: -ms-flexbox",
-        "display: flex"
+  dashboardPage(
+      dashboardHeader(title = "heemod"),
+      dashboardSidebar(
+        sidebarMenu(
+          id = "main",
+          menuItem("States", tabName = "tab_states"),
+          menuItem("Transition Matrix", tabName = "tab_transition_matrix"),
+          menuItem("Global Parameters", tabName = "tab_global_parameters"),
+          menuItem("Deterministic Sensitivity Analysis", tabName = "tab_dsa"),
+          menuItem("States Parameters", tabName = "tab_states_parameters"),
+          menuItem("Results", tabName = "tab_results"),
+          menuItem("Debug", tabName = "tab_debug")
+        )
       ),
-      ".rotateIcon" = c(
-        "-webkit-transition: 0.5s ease-in-out",
-        "-moz-transition: 0.5s ease-in-out",
-        "-o-transition: 0.5s ease-in-out",
-        "transition: 0.5s ease-in-out"
-      ),
-      ".rotateIcon:hover" = c(
-        "-webkit-transform: rotate(45deg)",
-        "-moz-transform: rotate(45deg)",
-        "-o-transform: rotate(45deg)",
-        "-ms-transform: rotate(45deg)",
-        "transform: rotate(45deg)"
-      ),
-      ".centerdiv" = c(
-        "display: -webkit-box",
-        "display: -moz-box",
-        "display: -ms-flexbox",
-        "display: -webkit-flex",
-        "display: flex",
-        "-ms-justify-content:center",
-        "-webkit-justify-content:center",
-        "justify-content:center"
-      )
-    )),
-    navbarPage(
-      "heemod",
-      id = "main",
-      
-      tabPanel(
-        "States",
-        sidebarLayout(
-          sidebarPanel(
-            fileInput("loadButton", "Load model")
+      dashboardBody(
+        useShinyjs(),
+        lang = "en-US",
+        inlineCSS(list(
+          ".row-eq-height"  = c(
+            "display: -webkit-box",
+            "display: -webkit-flex",
+            "display: -ms-flexbox",
+            "display: flex"
           ),
-          mainPanel(
-            fluidRow(
-              column(
-                6, 
-                wellPanel(
-                  numericInput(
-                    "nbStates",
-                    label = "Number of States",
-                    value = "",
-                    min = 1
-                  )
-                )
-              ),
-              column(
-                6, 
-                wellPanel(
-                  numericInput(
-                    "nbStrategies",
-                    label = "Number of Strategies",
-                    value="",
-                    min = 1
-                  )
-                )
-              )
+          ".rotateIcon" = c(
+            "-webkit-transition: 0.5s ease-in-out",
+            "-moz-transition: 0.5s ease-in-out",
+            "-o-transition: 0.5s ease-in-out",
+            "transition: 0.5s ease-in-out"
+          ),
+          ".rotateIcon:hover" = c(
+            "-webkit-transform: rotate(45deg)",
+            "-moz-transform: rotate(45deg)",
+            "-o-transform: rotate(45deg)",
+            "-ms-transform: rotate(45deg)",
+            "transform: rotate(45deg)"
+          ),
+          ".centerdiv" = c(
+            "display: -webkit-box",
+            "display: -moz-box",
+            "display: -ms-flexbox",
+            "display: -webkit-flex",
+            "display: flex",
+            "-ms-justify-content:center",
+            "-webkit-justify-content:center",
+            "justify-content:center"
+          )
+        )),
+      tabItems(
+        tabItem(
+          tabName = "tab_states",
+          sidebarLayout(
+            sidebarPanel(
+              fileInput("loadButton", "Load model")
             ),
-            fluidRow(
-              column(
-                6, 
-                uiOutput("nameStates")
-              ),
-              column(
-                6, 
-                uiOutput("nameStrategies")
-              )
-            ),
-            conditionalPanel(
-              condition = "input.checkShowHelp == 1",
+            mainPanel(
               fluidRow(
                 column(
-                  6,
+                  6, 
                   wellPanel(
-                    style = "background-color: #ffffff;",
-                    em("Number of distinct states in the model, and their names.")
+                    numericInput(
+                      "nbStates",
+                      label = "Number of States",
+                      value = "",
+                      min = 1
+                    )
                   )
                 ),
                 column(
-                  6,
+                  6, 
                   wellPanel(
-                    style = "background-color: #ffffff;",
-                    em("Number of strategies to compare.")
+                    numericInput(
+                      "nbStrategies",
+                      label = "Number of Strategies",
+                      value="",
+                      min = 1
+                    )
+                  )
+                )
+              ),
+              fluidRow(
+                column(
+                  6, 
+                  uiOutput("nameStates")
+                ),
+                column(
+                  6, 
+                  uiOutput("nameStrategies")
+                )
+              ),
+              conditionalPanel(
+                condition = "input.checkShowHelp == 1",
+                fluidRow(
+                  column(
+                    6,
+                    wellPanel(
+                      style = "background-color: #ffffff;",
+                      em("Number of distinct states in the model, and their names.")
+                    )
+                  ),
+                  column(
+                    6,
+                    wellPanel(
+                      style = "background-color: #ffffff;",
+                      em("Number of strategies to compare.")
+                    )
                   )
                 )
               )
             )
           )
-        )
-      ),
-      
-#       tabPanel(
-#         "Parameters", 
-#         sidebarLayout(
-#           sidebarPanel(
-#             h3("Mortality rate"),
-#             checkboxInput(
-#               "use_morta",
-#               "Use in model? (as mortality_rate)",
-#               width = "100%"
-#             ),
-#             numericInput(
-#               "startAge",
-#               "Age at beginning",
-#               0,
-#               width = "100%"
-#             ),
-#             numericInput(
-#               "cycleLength",
-#               "Duration of a cycle (years)",
-#               1,
-#               width = "100%"
-#             ),
-#             radioButtons(
-#               "gender",
-#               "Sex",
-#               choices = c(Female = "FMLE", Male = "MLE")
-#             ),
-#             uiOutput("searchRegion"),
-#             uiOutput("searchCountry"),
-#             conditionalPanel(
-#               condition = "input.checkShowHelp == 1",
-#               wellPanel(
-#                 style = "background-color: #ffffff;",
-#                 em("Input age-specific mortality rate from WHO databases."),
-#                 em("The rate can then be called in transitions matrixes by its name ("),
-#                 strong("mortality_rate"),
-#                 em(").")
-#               )
-#             )
-#           ),
-#           mainPanel(
-#             h3("Custom parameters"),
-#             uiOutput("globalParameters"),
-#             conditionalPanel(
-#               condition = "input.checkShowHelp == 1",
-#               fluidRow(
-#                 column(
-#                   4,
-#                   wellPanel(
-#                     style = "background-color: #ffffff;",
-#                     em("Optional parameters to be called in transition matrix or state values. 
-#                The variable "),
-#                     strong("markov_cycle"),
-#                     em(" is defined inside the model and takes values 0, 1, 2... n at each cycle.
-#                It can thus be used to define time-varying properties (such as age = 50 + markov_cycle).")
-#                   )
-#                 )
-#               )
-#             )
-#           )
-#         )
-#       ), 
-      
-      tabPanel(
-        "Transition Matrix",    
+        ),
+      tabItem(
+        tabName = "tab_transition_matrix",    
         fluidRow(
           column(
             12,
@@ -207,14 +155,14 @@ function(request) {
           )
         )
       ),
-      tabPanel(
-        "Global Parameters",
+      tabItem(
+        tabName = "tab_global_parameters",
         uiOutput("globalParameters"),
         uiOutput("addModule"),
         uiOutput("allModules")
       ), 
-      tabPanel(
-        "States Parameters",
+      tabItem(
+        tabName = "tab_states_parameters",
         sidebarLayout(
           sidebarPanel(
             numericInput(
@@ -309,20 +257,20 @@ function(request) {
           )
         )
       ),
-      tabPanel(
-        "Deterministic sensitivity analysis",
+      tabItem(
+        tabName = "tab_dsa",
         fluidRow(
          uiOutput("DSA") 
         )
       ),
-      tabPanel(
-        "Probabilistic sensitivity analysis",
+      tabItem(
+        tabName = "tab_psa",
         fluidRow(
           uiOutput("PSA") 
         )
       ),
-      tabPanel(
-        "Results",
+      tabItem(
+        tabName = "tab_results",
         sidebarLayout(
           sidebarPanel(
             h3("Model parameters"),
@@ -372,35 +320,9 @@ function(request) {
           )
         )
       ),
-      footer = wellPanel(
-        fluidRow(
-          column(
-            3,
-            em("heemod by KZ & AFP"),
-            br(),
-            tags$a(
-              href = "https://pierucci.github.io/heemod/",
-              "More info",
-              target="_blank"
-            )
-          ),
-          column(
-            3,
-            checkboxInput(
-              "checkShowHelp",
-              "Show help",
-              value = TRUE
-            )
-          ),
-          column(
-            3, 
-            offset = 3,
-            bookmarkButton()
-          )
-        )
-      ),
-      tabPanel(
-        "Debug",
+
+      tabItem(
+        tabName = "tab_debug",
         h3("Parameters"),
         uiOutput("debugParams"),
         h3("Models"),
@@ -408,6 +330,37 @@ function(request) {
         h3("Run Models"),
         verbatimTextOutput("debugRunModels")
       )
+    ),
+    wellPanel(
+      fluidRow(
+        column(
+          3,
+          em("heemod by KZ & AFP"),
+          br(),
+          tags$a(
+            href = "https://pierucci.github.io/heemod/",
+            "More info",
+            target="_blank"
+          )
+        ),
+        column(
+          3,
+          checkboxInput(
+            "checkShowHelp",
+            "Show help",
+            value = TRUE
+          )
+        ),
+        column(
+          3,
+          offset = 3,
+          bookmarkButton()
+        )
+      )
     )
   )
+  )
 }
+
+
+

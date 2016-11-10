@@ -15,23 +15,23 @@ shinyServer(function(input, output, session) {
       values[[x]] <- state$values[[x]]
     })
     localValues$currentTab <- input$main
-    updateTabsetPanel(session, "main", "States" )
+    updateTabItems(session, "main", "States" )
     delay(1, localValues$updatedState <- TRUE)
   })
 
   observe({
     req(localValues$updatedState)
-    updateTabsetPanel(session, "main", "Transition Matrix" )
+    updateTabItems(session, "main", "Transition Matrix" )
     delay(1, localValues$updatedTM <- TRUE)
   })
   observe({
     req(localValues$updatedTM)
-    updateTabsetPanel(session, "main", "State Parameters" )
+    updateTabItems(session, "main", "State Parameters" )
     delay(1, localValues$updatedSP <- TRUE)
   })
   observe({
     req(localValues$updatedSP)
-    updateTabsetPanel(session, "main", localValues$currentTab)
+    updateTabItems(session, "main", localValues$currentTab)
   })
   
   setBookmarkExclude(
