@@ -498,18 +498,21 @@ shinyServer(function(input, output, session) {
     fluidRow(
       column(
         1,
-        actionLink("newParam", "", icon("plus-circle", class="fa-3x rotateIcon")), style="margin-bottom:40px")
+        actionLink("newParam", "", icon("plus-circle", class="fa-3x rotateIcon"), style="margin-bottom:40px")
+      )
       ,
       column(
         11,
         hidden(
           fluidRow(
             id = "tabnewParam",
-            lapply(seq_along(MODULES), function(i){
-              fluidRow(
-                actionLink(MODULES[i], names(MODULES)[i], class = "btn btn-link")
-                )
-            })
+            tags$ul(class = "dropdown-menu", style ="display:block; background-color:rgba(255, 255, 255, 0.8)",
+              lapply(seq_along(MODULES), function(i){
+                tags$li(
+                  actionLink(MODULES[i], names(MODULES)[i], class = "btn btn-link")
+                  )
+              })
+            )
           )
         )
       )
