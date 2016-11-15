@@ -1,7 +1,4 @@
 show_PSA_div <- function(input, values, choices, n){
-  # var_name <- if (n == 0) "Variable name" else NULL
-  # psa_distrib <- if (n == 0) "Distribution" else NULL
-  # psa_param <- if (n == 0) "Maximum value" else NULL
   if (!is.null(input[[paste0("PSADistrib", n)]])){
     psa_param1 <- switch (input[[paste0("PSADistrib", n)]],
                           "Normal" = "Mean",
@@ -42,10 +39,12 @@ show_DSA_div <- function(input, values, choices, n){
   var_name <- if (n == 0) "Variable name" else NULL
   max_val <- if (n == 0) "Minimum value" else NULL
   min_val <- if (n == 0) "Maximum value" else NULL
-  div(id = paste0("DSA_div", n), class="centerdiv",
-      selectInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
-      numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
-      numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], ""))
+  isolate(
+    div(id = paste0("DSA_div", n), class="centerdiv",
+        selectInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
+        numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
+        numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], ""))
+    )
   )
 }
 

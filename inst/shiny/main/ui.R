@@ -9,8 +9,9 @@ function(request) {
           menuItem("States", tabName = "tab_states"),
           menuItem("Transition Matrix", tabName = "tab_transition_matrix"),
           menuItem("Global Parameters", tabName = "tab_global_parameters"),
-          menuItem("Deterministic Sensitivity Analysis", tabName = "tab_dsa"),
           menuItem("States Parameters", tabName = "tab_states_parameters"),
+          menuItem("Deterministic Sensitivity Analysis", tabName = "tab_dsa"),
+          menuItem("Probabilistic Sensitivity Analysis", tabName = "tab_psa"),
           menuItem("Results", tabName = "tab_results"),
           menuItem("Debug", tabName = "tab_debug")
         )

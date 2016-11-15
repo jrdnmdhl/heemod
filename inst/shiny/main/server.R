@@ -34,7 +34,9 @@ shinyServer(function(input, output, session) {
     c(
       paste0(MODULES, "OK"),
       "newParam",
-      unname(MODULES)
+      unname(MODULES),
+      "addDeterministic",
+      "addProbabilistic"
     )
   )
   
@@ -203,41 +205,18 @@ shinyServer(function(input, output, session) {
     isolate(values$nGlobalParameters <- values$nGlobalParameters + 1)
   })
   
-  add_deterministic <- NULL
   
   output$DSA <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     
-    ## Observer needed for bookmark and insertUI
-    observe({
-      req(values$nDeterministic > 0)
-      isolate({
-        if (!is.null(add_deterministic)) add_deterministic$destroy()
-        add_deterministic <<- observe({
-          values$nDeterministic
-          choices <- get_names_SA(input, values)
-          isolate({
-            lapply(seq_len(values$nDeterministic), function(i){
-              removeUI(paste0("#DSA_div",i))
-            })
-            lapply(seq_len(values$nDeterministic), function(i){
-              insertUI("#DSAtable",
-                       ui = show_DSA_div(input, values, choices, i)
-              )
-            })
-          })
-        })
-      })
-    })
-    ## End
-    
     i = 0
     tagList(
-    column(id = "DSAtable", 12,
-           isolate(show_DSA_div(input, values, choices, i))
-      ),
+    column(12,
+           uiOutput("DSAtable")
+           )
+      ,
     column(12,
     div(class="centerdiv",
         actionButton("addDeterministic", "Add a deterministic value")
@@ -245,18 +224,19 @@ shinyServer(function(input, output, session) {
     )
   })
 
-  
   observeEvent(input$addDeterministic, {
+    values$nDeterministic <- values$nDeterministic + 1
+  })
+  
+  output$DSAtable <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
-    values$nDeterministic <- values$nDeterministic + 1
-    
-    insertUI("#DSAtable",
-             ui = show_DSA_div(input, values, choices,  values$nDeterministic)
-    )
-
+    lapply(seq_len(values$nDeterministic + 1 ), function(i){
+      show_DSA_div(input, values, choices, i)
+    })
   })
+
   
   add_probabilistic <- NULL
   
@@ -265,39 +245,26 @@ shinyServer(function(input, output, session) {
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     
-    ## Observer needed for bookmark and insertUI
-    observe({
-      req(values$nProbabilistic > 0)
-      isolate({
-        if (!is.null(add_probabilistic)) add_probabilistic$destroy()
-        add_probabilistic <<- observe({
-          values$nProbabilistic
-          choices <- get_names_SA(input, values)
-          #isolate({
-            lapply(seq_len(values$nProbabilistic), function(i){
-              removeUI(paste0("#PSA_div", i))
-            })
-            lapply(seq_len(values$nProbabilistic), function(i){
-              insertUI("#PSAtable",
-                       ui = show_PSA_div(input, values, choices, i)
-              )
-            })
-          #})
-        })
-      })
-    })
-    ## End
-    
     i = 0
     tagList(
-      column(id = "PSAtable", 12,
-             show_PSA_div(input, values, choices, i)
+      column(12,
+             #show_PSA_div(input, values, choices, i)
+             uiOutput("PSAtable")
       ),
       column(12,
              div(class="centerdiv",
                  actionButton("addProbabilistic", "Add a probabilistic value")
              ))
     )
+  })
+  
+  output$PSAtable <- renderUI({
+    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    choices <- get_names_SA(input, values)
+    req(length(choices) > 0)
+    lapply(seq_len(values$nProbabilistic + 1 ), function(i){
+      show_PSA_div(input, values, choices, i)
+    })
   })
   
     observeEvent(input$addProbabilistic, {
