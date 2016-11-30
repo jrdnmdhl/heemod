@@ -1,3 +1,6 @@
+
+
+
 show_PSA_div <- function(input, values, choices, n){
   if (!is.null(input[[paste0("PSADistrib", n)]])){
     psa_param1 <- switch (input[[paste0("PSADistrib", n)]],
@@ -58,22 +61,23 @@ get_names_SA <- function(input, values){
   survival <- sapply(seq_len(values$nSurvival)-1, function(i){
     c(
       paste(input[[paste0("survivalName", i)]], "lambda"),
-      if (input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
+      if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
     )
   }) %>% unlist %>% as.vector
-  timedep <- sapply(seq_len(values$nTimedep)-1, function(i){
-    if (input[[paste0("timedepType", i)]] == "constant") {
-      input[[paste0("timedepName", i)]]
-    } else {
-        sapply(0:values[[paste0("nTimedepNC", i)]], function(j){
-          sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
-        }) %>% 
-        unlist %>% 
-        as.vector
-      }
-  }) %>% 
-    unlist %>% 
-    as.vector
+  # timedep <- sapply(seq_len(values$nTimedep)-1, function(i){
+  #   if (input[[paste0("timedepType", i)]] == "constant") {
+  #     input[[paste0("timedepName", i)]]
+  #   } else {
+  #       sapply(0:values[[paste0("nTimedepNC", i)]], function(j){
+  #         sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
+  #       }) %>% 
+  #       unlist %>% 
+  #       as.vector
+  #     }
+  # }) %>% 
+  #   unlist %>% 
+  #   as.vector
+  timedep <- ""
   return(
     c(equation, rgho, survival, timedep) %>% 
       unlist %>% 
@@ -253,16 +257,16 @@ searchRegion <- function(n, input){
 
 searchCountry <- function(n, input){
   req(input[[paste0("rghoRegion", n)]])
-  countryCodes <- filter_attrs(
+  countryCodes <- filter_gho(
     COUNTRY,
     WHO_REGION_CODE == input[[paste0("rghoRegion", n)]]
   )
   countryNames <- countryCodes %>%
     attr("labels")
-  
+
   vCountryCodes <- as.vector(c("Global", countryCodes))
   names(vCountryCodes) <- c("Global", countryNames)
-  
+
   selectizeInput(
     paste0("rghoCountry", n),
     NULL,
@@ -271,29 +275,31 @@ searchCountry <- function(n, input){
   )
 }
 
-show_module <- function(module, edit, n, input, values, localValues){
+
+
+prepare_module <- function(module, edit, n, input, output, values, localValues){
   if (edit)
     values$moduleEdit <- TRUE
   else
     values$moduleEdit <- FALSE
   if (module == "equation") {
-    tableTitle <- tagList(
+    table_title <- tagList(
       column(2, strong("Name")),
       column(2, strong("Value"))
     )
-    tableBody <- tagList(
+    table_body <- tagList(
       column(2, textInput(paste0("equationName", n), NULL, ifelse(!is.null(input[[paste0("equationName", n)]]), input[[paste0("equationName", n)]], ""))),
       column(2, textInput(paste0("equationValue", n), NULL, ifelse(!is.null(input[[paste0("equationValue", n)]]), input[[paste0("equationValue", n)]], "")))
     )
   } else if (module == "rgho"){
-    tableBody <- tagList(
+    table_body <- tagList(
       column(2, textInput(paste0("rghoName", n), NULL, ifelse(!is.null(input[[paste0("rghoName", n)]]), input[[paste0("rghoName", n)]], ""))),
       column(2, textInput(paste0("rghoStartAge", n), NULL, ifelse(!is.null(input[[paste0("rghoStartAge", n)]]), input[[paste0("rghoStartAge", n)]], ""))),
       column(2, selectInput(paste0("rghoGender", n), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = input[[paste0("rghoGender", n)]])),
       column(2, searchRegion(n, input)),
-      column(2, renderUI(searchCountry(n, input)))
+      column(2, renderUI({searchCountry(n, input)}))
     )
-    tableTitle <- tagList(
+    table_title <- tagList(
       column(2, strong("Name")),
       column(2, strong("Age at beginning")),
       column(2, strong("Gender")),
@@ -301,60 +307,34 @@ show_module <- function(module, edit, n, input, values, localValues){
       column(2, strong("Country"))
     )
   } else if (module == "survival"){
-    if (!sapply(observe_show_module_survival[n + 1], is.null)){
-      observe_show_module_survival[[n + 1]]$destroy()
-    }
-    observe_show_module_survival[[n + 1]] <<- observe({
-      if (edit){
-        prefix <- "#editingSurvival"
-        suffix <- ""
-        whereBody <- "beforeEnd"
-      }
-      else {
-        prefix <- "#survival"
-        suffix <- " div:last"
-        whereBody <- "beforeBegin"
-      }
-      selectorBody <- paste0(prefix, "Body", n)
-      selectorTitle <- paste0(prefix, "Title", n)
-      
-      if (!is.null(input[[paste0("survivalDistribution", n)]])){
-        if (input[[paste0("survivalDistribution", n)]] == "Weibull"){
-          removeUI(paste0(selectorBody, " .new"))
-          removeUI(paste0(selectorTitle, " .new"))
-          insertUI(paste0(selectorBody, suffix), ui =
-                     isolate({
-                       column(2, class = "new", numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],""))
-                       )
-                     }),
-                   where = whereBody
-          )
-          insertUI(selectorTitle, ui = 
-                     column(2, class = "new", strong("k")
-                     )
-          )
-        } else {
-          removeUI(paste0(selectorBody, " .new"))
-          removeUI(paste0(selectorTitle, " .new"))
-        }
-      }
-      
-    })
-    tableBody <- tagList(
-      column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
-      column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
-      column(2, numericInput(paste0("survivalLambda", n), NULL, ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], "")))
+    table_body <- tagList(
+        renderUI({
+          tagList(
+            column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
+            column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
+            column(2, numericInput(paste0("survivalLambda", n), NULL, ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], ""))),
+            column(2, 
+                   if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
+                     isolate(numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],"")))
+                   }
+            ))
+        })
     )
-    tableTitle <- tagList(
+    table_title <- tagList(
       column(2, strong("Name")), 
       column(2, strong("Distribution")), 
-      column(2, strong("Lambda"))
-    )
+      column(2, strong("Lambda")),
+      column(2, renderUI({
+        if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
+                      strong("k")
+        }
+      }))
+    ) 
   } else if (module == "timedep"){
-    if (!sapply(observe_show_module_timedep[n + 1], is.null)){
-      observe_show_module_timedep[[n + 1]]$destroy()
+    if (!sapply(observe_prepare_module_timedep[n + 1], is.null)){
+      observe_prepare_module_timedep[[n + 1]]$destroy()
     }
-    observe_show_module_timedep[[n + 1]] <<- observe({
+    observe_prepare_module_timedep[[n + 1]] <<- observe({
       if (edit){
         prefix <- "#editingTimedep"
         suffix <- ""
@@ -421,22 +401,26 @@ show_module <- function(module, edit, n, input, values, localValues){
       }
       
     })
-    tableBody <- tagList(
+    table_body <- tagList(
       column(2, textInput(paste0("timedepName", n), NULL, ifelse(!is.null(input[[paste0("timedepName", n)]]), input[[paste0("timedepName", n)]], ""))),
       column(2, selectInput(paste0("timedepType", n), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected = ifelse(!is.null(input[[paste0("timedepType", n)]]), input[[paste0("timedepType", n)]], character(0))))
     )
-    tableTitle <- tagList(
+    table_title <- tagList(
       column(2, strong("Name")),
       column(2, strong("Type of time-dependent variable"))
     )
   }
+  show_module(module, edit, n, table_title, table_body) 
+}
+
+show_module <- function(module, edit, n, table_title, table_body)  {
   if (edit){
     wellPanel(id = paste0("editing", upFirst(module)),
               fluidRow(id = paste0("editing", upFirst(module), "Title", n), class = "row-eq-height",
-                       tableTitle
+                       table_title
               ),
               fluidRow(id = paste0("editing", upFirst(module), "Body", n), class = "row-eq-height",
-                       tableBody
+                       table_body
               ),
               actionButton(paste0(module, "OK"), "OK")
     )
@@ -447,33 +431,34 @@ show_module <- function(module, edit, n, input, values, localValues){
       },
       if (n == 0 | !module %in% c("equation", "rgho"))
         fluidRow(id = paste0(module, "Title", n), class = "row-eq-height",
-                 tableTitle
+                 table_title
         ),
       fluidRow(id = paste0(module, "Body", n), class = "row-eq-height",
-               tableBody, 
-               column(1, actionLink(paste0(module,"Delete", n), icon("trash-o", "fa-2x")))
+               table_body#, 
+               #actionLink(paste0(module,"Delete", n), icon("trash-o", "fa-2x"))
       )
     )
   }
 }
 
-
-insert_module_line <-function(module, input, values, localValues){
-  n <- values[[paste0("n", upFirst(module))]]
-  req(n > 0)
-  lapply(seq_len(n)-1, function(i){
-    removeUI(paste0("#", module, "H4"), multiple=TRUE)
-    removeUI(paste0("#", module, "Body",i), multiple=TRUE)
-    removeUI(paste0("#", module, "Title",i), multiple=TRUE)
-  })
-  
-  lapply(seq_len(n)-1, function(i){
-    insertUI("#allModules", ui=
-               show_module(module, FALSE, i, input, values, localValues)
-    )
-    
-  })
-}
+# insert_module_line <-function(module, input, values, localValues){
+#   n <- values[[paste0("n", upFirst(module))]]
+#   req(n > 0)
+#   # lapply(seq_len(n)-1, function(i){
+#   #   removeUI(paste0("#", module, "H4"), multiple=TRUE)
+#   #   removeUI(paste0("#", module, "Body",i), multiple=TRUE)
+#   #   removeUI(paste0("#", module, "Title",i), multiple=TRUE)
+#   # })
+#   # 
+#   # lapply(seq_len(n)-1, function(i){
+#   #   insertUI("#allModules", ui=
+#   #              prepare_module(module, FALSE, i, input, values, localValues)
+#   #   )
+#   #})
+#   lapply(seq_len(n)-1, function(i){
+#      renderUI(prepare_module(module, FALSE, i, input, values, localValues))
+#   })
+# }
 
 
 show_first <- function(val, FUN, input){
