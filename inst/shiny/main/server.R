@@ -1,7 +1,6 @@
 shinyServer(function(input, output, session) {
-  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, nTimedep = 0, nDeterministic = 0, nProbabilistic = 0, moduleEdit = FALSE)
-  localValues <- reactiveValues(loaded = FALSE, restored = FALSE)
-  
+  values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, 
+                           nTimedep = 0, nDeterministic = 0, nProbabilistic = 0, moduleEdit = FALSE)
   
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
@@ -15,22 +14,17 @@ shinyServer(function(input, output, session) {
     sapply(nameValues, function(x){
       values[[x]] <- state$values[[x]]
     })
-    localValues$currentTab <- input$main
     updateTabItems(session, "main", "States" )
   })
   
   onRestored(function(state) {
-    localValues$restored <- TRUE
-  })
-  
-  #Should the content of that observer be inside onRestored?
-  observe({ 
     output_names <- names(outputOptions(output))
     output_names <- output_names[-grep("debug", output_names)]
     for (out in output_names){
       outputOptions(output, out, suspendWhenHidden = FALSE)
     }
   })
+  
   setBookmarkExclude(
     c(
       paste0(MODULES, "OK"),
@@ -79,26 +73,7 @@ shinyServer(function(input, output, session) {
       })
     })
   }) 
-  
-  observe({
-    req(localValues$loaded)
-        lapply(0:values$nTimedep, function(n) {
-          if (!is.null(values[[paste0("nTimedepNC", n)]]) && values[[paste0("nTimedepNC", n)]] > 0){
-            isolate({
-            lapply(seq_len(values[[paste0("nTimedepNC", n)]]), function(i){
-                removeUI(paste0("#timedepValueNCLine", n, i), multiple=TRUE) #Remove then insert is suboptimal, but works. Reactivity...
-                insertUI(selector = paste0("#timedepNC", n), ui=
-                           fluidRow(id = paste0("timedepValueNCLine", n, i),
-                                    column(4, textInput(paste0("timedepValueNC", n, i), NULL, ifelse (!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], ""))),
-                                    column(4, numericInput(paste0("timedepStart", n, i), NULL, ifelse (!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]], ""))),
-                                    column(4, numericInput(paste0("timedepEnd", n, i), NULL, ifelse (!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], "")))
-                           )
-                )
-            })
-            })
-          }
-        })
-      }, priority= - 1)
+
 
   observe({
     inFile <- input$loadButton
