@@ -606,27 +606,14 @@ shinyServer(function(input, output, session) {
   }
   
   output$globalParameters <- renderUI({
-    fluidRow(
-      column(12,
-             lapply(MODULES, function(module){
-               n <- values[[paste0("n", upFirst(module))]]
-             fluidRow(
-               column(12,
-                      uiOutput(module)
-               )
-             )}),
-             fluidRow(
-               column(
-                 1,
-                 actionLink("newParam", "", icon("plus-circle", class="fa-3x rotateIcon"), style="margin-bottom:40px")
-               )
-               ,
-               column(
-                 11,
+    tagList(
+    fluidRow(class="dropdown",
+             column(12,
+                 actionLink("newParam", "", icon("plus-circle", class="fa-3x rotateIcon"), style="margin-bottom:40px") %>% div,
                  hidden(
                    fluidRow(
                      id = "tabnewParam",
-                     tags$ul(class = "dropdown-menu", style ="display:block; background-color:rgba(255, 255, 255, 0.8)",
+                     tags$ul(class = "dropdown-menu", style ="position:absolute; top:0; left:60px; display:block; background-color:rgba(255, 255, 255, 0.8)",
                              lapply(seq_along(MODULES), function(i){
                                tags$li(
                                  actionLink(MODULES[i], names(MODULES)[i], class = "btn btn-link")
@@ -635,9 +622,16 @@ shinyServer(function(input, output, session) {
                      )
                    )
                  )
-               )
-             )
-    ))
+                 )
+             ),
+       lapply(MODULES, function(module){
+         n <- values[[paste0("n", upFirst(module))]]
+         fluidRow(
+           column(12,
+                  uiOutput(module)
+           )
+         )})
+    )
   })
   
   onevent(
@@ -645,7 +639,7 @@ shinyServer(function(input, output, session) {
     "newParam",
     show(
       "tabnewParam",
-      anim = TRUE,
+      anim = F,
       animType = "fade"
     ))
   onevent(
@@ -653,7 +647,7 @@ shinyServer(function(input, output, session) {
     "globalParameters",
     hide(
       "tabnewParam",
-      anim = TRUE,
+      anim = F,
       animType = "fade"
     ))
   
