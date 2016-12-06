@@ -4,14 +4,14 @@ shinyServer(function(input, output, session) {
   
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
-    sapply(nameValues, function(x){
+    walk(nameValues, function(x){
       state$values[[x]] <- values[[x]]
     })
   })
   
   onRestore(function(state) {
     nameValues <- ls(state$values)
-    sapply(nameValues, function(x){
+    walk(nameValues, function(x){
       values[[x]] <- state$values[[x]]
     })
     updateTabItems(session, "main", "States" )
@@ -35,8 +35,9 @@ shinyServer(function(input, output, session) {
     )
   )
   
-  observe({
+  observe({ ##?WHY??
   output$searchCountry <- renderUI({
+    n <- values$nRho
     req(input[[paste0("rghoRegion", n)]])
     countryCodes <- filter_gho(
       COUNTRY,
@@ -62,7 +63,7 @@ shinyServer(function(input, output, session) {
   observe_nTimedep <<- observe({
     lapply(0:values$nTimedep, function(n){
       isolate({
-        if (sapply(observe_timedepNew[n + 1], is.null)){ #I would have prefered : if (is.null(observe_timedepNew[[n+1]]))
+        if (map_lgl(observe_timedepNew[n + 1], is.null)){ #I would have prefered : if (is.null(observe_timedepNew[[n+1]]))
           observe_timedepNew[[n + 1]] <<- observeEvent(input[[paste0("timedepNew", n)]], {
             if (is.null(values[[paste0("nTimedepNC", n)]]))
               values[[paste0("nTimedepNC", n)]] <- 1
@@ -205,7 +206,7 @@ shinyServer(function(input, output, session) {
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
-    
+
     i = 0
     tagList(
     column(12,
@@ -237,6 +238,7 @@ shinyServer(function(input, output, session) {
   output$PSA <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
+    print(choices)
     req(length(choices) > 0)
     
     i = 0

@@ -4,6 +4,7 @@ library(dplyr)
 library(Hmisc)
 library(heemod)
 library(rgho)
+library(purrr)
 
 REGION <- NULL
 COUNTRY <- NULL
@@ -23,4 +24,3 @@ MODULES <- c(
 enableBookmarking(store = "url")
 observe_show_module_timedep <- list()
 observe_show_module_survival <- list()
-

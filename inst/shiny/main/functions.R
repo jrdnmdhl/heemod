@@ -1,6 +1,3 @@
-
-
-
 show_PSA_div <- function(input, values, choices, n){
   if (!is.null(input[[paste0("PSADistrib", n)]])){
     psa_param1 <- switch (input[[paste0("PSADistrib", n)]],
@@ -20,8 +17,8 @@ show_PSA_div <- function(input, values, choices, n){
     ) 
   }
   fluidRow(id = paste0("PSA_div", n),
-      column(2, selectInput(paste0("PSAGlobalParamName", n), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", n)]]), input[[paste0("PSAGlobalParamName", n)]], ""))),
-      column(2, selectInput(paste0("PSADistrib", n), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", n)]]), input[[paste0("PSADistrib", n)]], character(0)))),
+      column(2, selectizeInput(paste0("PSAGlobalParamName", n), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", n)]]), input[[paste0("PSAGlobalParamName", n)]], ""))),
+      column(2, selectizeInput(paste0("PSADistrib", n), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", n)]]), input[[paste0("PSADistrib", n)]], character(0)))),
       if (!is.null(input[[paste0("PSADistrib", n)]]) && length(input[[paste0("PSADistrib", n)]]) > 0){
         isolate(
         tagList(
@@ -44,46 +41,50 @@ show_DSA_div <- function(input, values, choices, n){
   min_val <- if (n == 0) "Maximum value" else NULL
   isolate(
     div(id = paste0("DSA_div", n), class="centerdiv",
-        selectInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
+        selectizeInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
         numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
         numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], ""))
     )
   )
 }
 
+
 get_names_SA <- function(input, values){
-  equation <- sapply(seq_len(values$nEquation)-1, function(i){
+  equation <- map(seq_len(values$nEquation)-1, function(i){
     input[[paste0("equationName", i)]]
-  })
-  rgho <- sapply(seq_len(values$nRgho)-1, function(i){
+  }) 
+  rgho <- map(seq_len(values$nRgho)-1, function(i){
     input[[paste0("rghoName", i)]]
-  })
-  survival <- sapply(seq_len(values$nSurvival)-1, function(i){
+  }) 
+  survival <- map(seq_len(values$nSurvival)-1, function(i){
     c(
       paste(input[[paste0("survivalName", i)]], "lambda"),
       if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
     )
-  }) %>% unlist %>% as.vector
-  # timedep <- sapply(seq_len(values$nTimedep)-1, function(i){
-  #   if (input[[paste0("timedepType", i)]] == "constant") {
-  #     input[[paste0("timedepName", i)]]
-  #   } else {
-  #       sapply(0:values[[paste0("nTimedepNC", i)]], function(j){
-  #         sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
-  #       }) %>% 
-  #       unlist %>% 
-  #       as.vector
-  #     }
-  # }) %>% 
-  #   unlist %>% 
-  #   as.vector
-  timedep <- ""
+  })
+  timedep <- map(0:(values$nTimedep-1), function(i){
+    if (!is.null(input[[paste0("timedepType", i)]])){
+      if (input[[paste0("timedepType", i)]] == "constant") {
+        input[[paste0("timedepName", i)]]
+      }
+      else {
+        if(!is.null(values[[paste0("nTimedepNC", i)]])){
+          map(0:values[[paste0("nTimedepNC", i)]], function(j){
+            sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
+          }) %>% compact %>% flatten_chr
+        }
+      }
+    }
+      
+  })
   return(
     c(equation, rgho, survival, timedep) %>% 
-      unlist %>% 
+      compact %>%
+      flatten_chr %>% 
       sort
     )
 }
+
 
 showStateParam <- function(nbStrat, input, values, click) {
   nbStates <- input$nbStates
