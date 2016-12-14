@@ -39,13 +39,14 @@ show_DSA_div <- function(input, values, choices, n){
   var_name <- if (n == 0) "Variable name" else NULL
   max_val <- if (n == 0) "Minimum value" else NULL
   min_val <- if (n == 0) "Maximum value" else NULL
-  isolate(
+  isolate({
+    print(choices)
     div(id = paste0("DSA_div", n), class="centerdiv",
         selectizeInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
         numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
         numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], ""))
     )
-  )
+  })
 }
 
 
@@ -58,7 +59,7 @@ get_names_SA <- function(input, values){
   }) 
   survival <- map(seq_len(values$nSurvival)-1, function(i){
     c(
-      paste(input[[paste0("survivalName", i)]], "lambda"),
+      if(!is.null(input[[paste0("survivalName", i)]]))paste(input[[paste0("survivalName", i)]], "lambda"),
       if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
     )
   })
@@ -256,6 +257,7 @@ searchRegion <- function(n, input){
   )
 }
 
+
 searchCountry <- function(n, input){
   req(input[[paste0("rghoRegion", n)]])
   countryCodes <- filter_gho(
@@ -267,12 +269,11 @@ searchCountry <- function(n, input){
 
   vCountryCodes <- as.vector(c("Global", countryCodes))
   names(vCountryCodes) <- c("Global", countryNames)
-
   selectizeInput(
     paste0("rghoCountry", n),
     NULL,
     choices = vCountryCodes,
-    selected = ifelse(!is.null(input[[paste0("rghoCountry", n)]]), input[[paste0("rghoCountry", n)]], "GLOBAL")
+    selected = isolate({ifelse(!is.null(input[[paste0("rghoCountry", n)]]), input[[paste0("rghoCountry", n)]], "GLOBAL")})
   )
 }
 

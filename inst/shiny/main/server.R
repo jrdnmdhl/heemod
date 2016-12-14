@@ -20,6 +20,8 @@ shinyServer(function(input, output, session) {
   onRestored(function(state) {
     output_names <- names(outputOptions(output))
     output_names <- output_names[-grep("debug", output_names)]
+    except <- c(MODULES, "DSA", "DSAtable")
+    output_names <- output_names[!output_names %in% except]
     for (out in output_names){
       outputOptions(output, out, suspendWhenHidden = FALSE)
     }
@@ -117,7 +119,7 @@ shinyServer(function(input, output, session) {
               input[[paste0("stateName",i)]],
               LETTERS[i]))
         })
-      })
+      }) %>% box
   })
   
   output$nameStateVariables <- renderUI({
@@ -140,7 +142,7 @@ shinyServer(function(input, output, session) {
               else
                 paste0("variable_",i)))
         })
-      })
+      }) 
   })
   
   output$nameStrategies <- renderUI({
@@ -158,7 +160,7 @@ shinyServer(function(input, output, session) {
               input[[paste0("strategyName",i)]],
               as.character(as.roman(i))))
         })
-      })
+      }) %>% box
   })
   
   
@@ -204,9 +206,8 @@ shinyServer(function(input, output, session) {
   
   output$DSA <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
-    choices <- get_names_SA(input, values)
-    req(length(choices) > 0)
-
+    # choices <- get_names_SA(input, values)
+    # req(length(choices) > 0)
     i = 0
     tagList(
     column(12,
@@ -223,69 +224,68 @@ shinyServer(function(input, output, session) {
   observeEvent(input$addDeterministic, {
     values$nDeterministic <- values$nDeterministic + 1
   })
-  
+
   output$DSAtable <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
-    lapply(seq_len(values$nDeterministic + 1 ), function(i){
+    lapply(0:values$nDeterministic, function(i){
       show_DSA_div(input, values, choices, i)
     })
   })
-  
+
   add_probabilistic <- NULL
   
-  output$PSA <- renderUI({
-    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
-    choices <- get_names_SA(input, values)
-    print(choices)
-    req(length(choices) > 0)
-    
-    i = 0
-    tagList(
-      column(12,
-             uiOutput("PSAtable")
-      ),
-      column(12,
-             div(class="centerdiv",
-                 actionButton("addProbabilistic", "Add a probabilistic value")
-             ))
-    )
-  })
+  # output$PSA <- renderUI({
+  #   req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+  #   isolate(choices <- get_names_SA(input, values))
+  #   req(length(choices) > 0)
+  # 
+  #   i = 0
+  #   tagList(
+  #     column(12,
+  #            uiOutput("PSAtable")
+  #     ),
+  #     column(12,
+  #            div(class="centerdiv",
+  #                actionButton("addProbabilistic", "Add a probabilistic value")
+  #            ))
+  #   )
+  # })
   
-  output$PSAtable <- renderUI({
-    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
-    choices <- get_names_SA(input, values)
-    req(length(choices) > 0)
-    lapply(seq_len(values$nProbabilistic + 1 ), function(i){
-      show_PSA_div(input, values, choices, i)
-    })
-  })
+  # output$PSAtable <- renderUI({
+  #   req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+  #   isolate(choices <- get_names_SA(input, values))
+  #   req(length(choices) > 0)
+  #   lapply(0:values$nProbabilistic, function(i){
+  #     show_PSA_div(input, values, choices, i)
+  #   })
+  # })
   
     observeEvent(input$addProbabilistic, {
     values$nProbabilistic <- values$nProbabilistic + 1
     
   })
     
-  output$addMultinomial <- renderUI({
-    req(values$nProbabilistic > 0)
-    choices <- get_names_SA(input, values)
-    lapply(0:values$nProbabilistic, function(i){
-      req(input[[paste0("PSADistrib", i)]])
-      if (input[[paste0("PSADistrib", i)]] == "Multinomial"){
-        req(input[[paste0("PSAParam1", i)]])
-        lapply(seq_len(input[[paste0("PSAParam1", i)]]), function(j){
-          fluidRow(
-            column(4, 
-            if (j == 1) textInput(paste0("PSAMultinomName", i, j), label = "Parameter", value = input[[paste0("PSAGlobalParamName", i)]]) %>% disabled
-            else  selectInput(paste0("PSAMultinomName", i, j), label = "Parameter", choices = choices, selected = ifelse(!is.null(input[[paste0("PSAMultinomName", i, j)]]), input[[paste0("PSAMultinomName", i, j)]], ""))
-          ),
-          column(4, numericInput("PSAMultinomValue", "Value", 0))
-          )
-        })
-      }
-    })
-  })
+  # output$addMultinomial <- renderUI({
+  #   req(values$nProbabilistic > 0)
+  #   isolate(choices <- get_names_SA(input, values))
+  #   lapply(0:values$nProbabilistic, function(i){
+  #     req(input[[paste0("PSADistrib", i)]])
+  #     if (input[[paste0("PSADistrib", i)]] == "Multinomial"){
+  #       req(input[[paste0("PSAParam1", i)]])
+  #       lapply(seq_len(input[[paste0("PSAParam1", i)]]), function(j){
+  #         fluidRow(
+  #           column(4, 
+  #           if (j == 1) textInput(paste0("PSAMultinomName", i, j), label = "Parameter", value = input[[paste0("PSAGlobalParamName", i)]]) %>% disabled
+  #           else  selectInput(paste0("PSAMultinomName", i, j), label = "Parameter", choices = choices, selected = ifelse(!is.null(input[[paste0("PSAMultinomName", i, j)]]), input[[paste0("PSAMultinomName", i, j)]], ""))
+  #         ),
+  #         column(4, numericInput("PSAMultinomValue", "Value", 0))
+  #         )
+  #       })
+  #     }
+  #   })
+  # })
   
   output$outInit <- renderUI({
     #####
@@ -456,7 +456,8 @@ shinyServer(function(input, output, session) {
   })
   
 
-  ### prepare_timedep has a big problem with reactivity : there are 2 renderUI imbricated inside 1 renderUI. When one of the renderUI is updated, all the others are invalidated. 
+  ### prepare_timedep has a big problem with reactivity : there are 2 renderUI imbricated inside 1 renderUI. 
+  ### When one of the renderUI is updated, all the others are invalidated. 
   
   prepare_timedep <- function(n, edit, input, values) {
       table_body <- tagList(
@@ -528,14 +529,15 @@ shinyServer(function(input, output, session) {
       )
       return(list(title = table_title, body = table_body))
   }
-
   prepare_rgho <- function(n, edit, input, values) {
     table_body <- tagList(
-      column(2, textInput(paste0("rghoName", n), NULL, ifelse(!is.null(input[[paste0("rghoName", n)]]), input[[paste0("rghoName", n)]], ""))),
-      column(2, textInput(paste0("rghoStartAge", n), NULL, ifelse(!is.null(input[[paste0("rghoStartAge", n)]]), input[[paste0("rghoStartAge", n)]], ""))),
-      column(2, selectInput(paste0("rghoGender", n), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = input[[paste0("rghoGender", n)]])),
+      isolate(column(2, textInput(paste0("rghoName", n), NULL, ifelse(!is.null(input[[paste0("rghoName", n)]]), input[[paste0("rghoName", n)]], "")))),
+      isolate(column(2, textInput(paste0("rghoStartAge", n), NULL, ifelse(!is.null(input[[paste0("rghoStartAge", n)]]), input[[paste0("rghoStartAge", n)]], "")))),
+      isolate(column(2, selectInput(paste0("rghoGender", n), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = input[[paste0("rghoGender", n)]]))),
       column(2, searchRegion(n, input)),
-      column(2, renderUI(searchCountry(n, input)))
+      column(2, renderUI({
+        searchCountry(n, input)
+        }))
     )
     table_title <- tagList(
       column(2, strong("Name")),
@@ -547,7 +549,7 @@ shinyServer(function(input, output, session) {
     return(list(title = table_title, body = table_body))
   }
   
-  prepare_equation<- function(n, edit, input, values) {
+  prepare_equation <- function(n, edit, input, values) {
     table_title <- tagList(
       column(2, strong("Name")),
       column(2, strong("Value"))
@@ -599,8 +601,10 @@ shinyServer(function(input, output, session) {
       substitute({
         nb_lines <- values[[paste0("n", upFirst(module))]]
         out <- lapply(seq_len(nb_lines) - 1, function(n){
-          title_body <- do.call(paste0("prepare_", module), list(n, edit, input, values))
-          show_module(module, edit, n, title_body$title, title_body$body)
+          isolate({
+            title_body <- do.call(paste0("prepare_", module), list(n, edit, input, values))
+            show_module(module, edit, n, title_body$title, title_body$body)
+          })
         })
         out
       })
@@ -627,7 +631,6 @@ shinyServer(function(input, output, session) {
                  )
              ),
        lapply(MODULES, function(module){
-         n <- values[[paste0("n", upFirst(module))]]
          fluidRow(
            column(12,
                   uiOutput(module)
@@ -671,9 +674,8 @@ shinyServer(function(input, output, session) {
       else {
         n <- values[[paste0("n", upFirst(module))]]
         title_body <- do.call(paste0("prepare_", module), list(n, edit, input, values))
-          insertUI("#addModule", ui=
-                     show_module(module, edit, n, title_body$title, title_body$body)
-                     
+        insertUI("#addModule", ui=
+                 show_module(module, edit, n, title_body$title, title_body$body)
           )
       }
     })

@@ -53,26 +53,16 @@ function(request) {
       tabItems(
         tabItem(
           tabName = "tab_states",
-          sidebarLayout(
-            sidebarPanel(
-              fileInput("loadButton", "Load model")
-            ),
-            mainPanel(
               fluidRow(
-                column(
-                  6, 
-                  wellPanel(
-                    numericInput(
-                      "nbStates",
-                      label = "Number of States",
-                      value = "",
-                      min = 1
-                    )
+                box(
+                  numericInput(
+                  "nbStates",
+                  label = "Number of States",
+                  value = "",
+                  min = 1
                   )
                 ),
-                column(
-                  6, 
-                  wellPanel(
+                box(
                     numericInput(
                       "nbStrategies",
                       label = "Number of Strategies",
@@ -80,40 +70,25 @@ function(request) {
                       min = 1
                     )
                   )
-                )
               ),
               fluidRow(
-                column(
-                  6, 
-                  uiOutput("nameStates")
-                ),
-                column(
-                  6, 
+                  uiOutput("nameStates"),
                   uiOutput("nameStrategies")
-                )
               ),
               conditionalPanel(
                 condition = "input.checkShowHelp == 1",
                 fluidRow(
-                  column(
-                    6,
-                    wellPanel(
+                  box(
                       style = "background-color: #ffffff;",
                       em("Number of distinct states in the model, and their names.")
-                    )
+                    
                   ),
-                  column(
-                    6,
-                    wellPanel(
+                  box(
                       style = "background-color: #ffffff;",
                       em("Number of strategies to compare.")
                     )
-                  )
-                )
               )
-            )
-          )
-        ),
+        )),
       tabItem(
         tabName = "tab_transition_matrix",    
         fluidRow(
@@ -142,16 +117,13 @@ function(request) {
         conditionalPanel(
           condition = "input.checkShowHelp == 1",
           fluidRow(
-            column(
-              4,
-              wellPanel(
+            box(
                 style = "background-color: #ffffff;",
                 em("Matrix of transition probabilities between states.
                References can be made to parameters computed in the previous tab.
                The sum of probabilities per row must equal 1. The alias "),
                 strong("C"),
                 em(" (meaning probability complement) means 1 minus the row sum of other probabilities.")
-              )
             )
           )
         )
@@ -159,8 +131,8 @@ function(request) {
       tabItem(
         tabName = "tab_global_parameters",
         uiOutput("globalParameters"),
-        uiOutput("addModule"),
-        uiOutput("allModules")
+        uiOutput("addModule")
+        #uiOutput("allModules")
       ), 
       tabItem(
         tabName = "tab_states_parameters",
