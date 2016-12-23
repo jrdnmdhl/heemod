@@ -32,35 +32,20 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    if (local_values$restoring == 1){
-      invalidateLater(1000)
-      if (Sys.time() - local_values$restoring_time > 2){
-        updateTabItems(session, "main", "tab_global_parameters" )
-
-        local_values$restoring <- 2
-        local_values$restoring_time <- Sys.time()
-      }
-    }
-  })
-  observe({
-    if (local_values$restoring == 2){
-      invalidateLater(1000)
-      if (Sys.time() - local_values$restoring_time > 2){
-        updateTabItems(session, "main", "tab_dsa" )
-        local_values$restoring <- 3
-        local_values$restoring_time <- Sys.time()
-      }
-    }
-  })
-  observe({
-    if (local_values$restoring == 3){
-      invalidateLater(1000)
-      if (Sys.time() - local_values$restoring_time > 2){
-        updateTabItems(session, "main", local_values$last_tab )
-        local_values$restoring <- 4
-        local_values$restoring_time <- Sys.time()
-      }
-    }
+    req(local_values$restoring > 0)
+    local_values$order_restore <- c("tab_global_parameters", "tab_dsa", local_values$last_tab)
+    walk2(seq_len(FINAL_RESTORE - 1), local_values$order_restore, function(x, y){
+      observe({
+        if (local_values$restoring == x){
+          invalidateLater(100)
+          if (Sys.time() - local_values$restoring_time > 2){
+            updateTabItems(session, "main", y )
+            local_values$restoring <- x + 1
+            local_values$restoring_time <- Sys.time()
+          }
+        }
+      })
+    })
   })
   
   observe({
