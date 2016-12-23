@@ -1,5 +1,6 @@
 library(shinyjs)
 library(shinydashboard)
+
 function(request) {
   dashboardPage(
       dashboardHeader(title = "heemod"),
@@ -48,6 +49,11 @@ function(request) {
             "-ms-justify-content:center",
             "-webkit-justify-content:center",
             "justify-content:center"
+          ),
+          ".active > .restoring" = c(
+            "color: #b8c7ce !important",
+            "border-left-color:#222d32 !important",
+            "background:#222d32 !important"
           )
         )),
         uiOutput("masker"),

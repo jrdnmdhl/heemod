@@ -69,9 +69,11 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    if(local_values$show_masker){
-      hide("main")
-    } else shinyjs::show("main")
+     if(local_values$show_masker){
+       addClass(class = "restoring", selector = "#main li > a")
+     } else {
+       removeClass(class = "restoring", selector = "#main li > a")
+     }
   })
 
   setBookmarkExclude(
