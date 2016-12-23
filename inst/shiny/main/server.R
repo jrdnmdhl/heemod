@@ -1,7 +1,7 @@
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, 
                            nTimedep = 0, nDeterministic = 0, nProbabilistic = 0, moduleEdit = FALSE)
-  local_values <- reactiveValues(restoring = 0, restoring_time = Sys.time(), restore_final = FALSE)
+  local_values <- reactiveValues(restoring = 0, restoring_time = Sys.time(), show_masker = FALSE)
   
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
@@ -22,7 +22,7 @@ shinyServer(function(input, output, session) {
   onRestored(function(state) {
     output_names <- names(outputOptions(output))
     output_names <- output_names[-grep("debug", output_names)]
-    except <- c(MODULES, "DSA", "DSAtable")
+    except <- c(MODULES, "DSA", "DSAtable", "PSA", "PSAtable")
     output_names <- output_names[!output_names %in% except]
     for (out in output_names){
       outputOptions(output, out, suspendWhenHidden = FALSE)
@@ -33,8 +33,9 @@ shinyServer(function(input, output, session) {
   
   observe({
     req(local_values$restoring > 0)
-    local_values$order_restore <- c("tab_global_parameters", "tab_dsa", local_values$last_tab)
-    walk2(seq_len(FINAL_RESTORE - 1), local_values$order_restore, function(x, y){
+    local_values$order_restore <- c("tab_global_parameters", "tab_dsa", "tab_psa", local_values$last_tab)
+    local_values$final_restore <- length(local_values$order_restore) + 1
+    walk2(seq_len(local_values$final_restore - 1), local_values$order_restore, function(x, y){
       observe({
         if (local_values$restoring == x){
           invalidateLater(100)
@@ -49,15 +50,16 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    if(local_values$restoring == FINAL_RESTORE | local_values$restoring  == 0) {
-      local_values$restore_final <- TRUE
-    } else local_values$restore_final <- FALSE
+    req(local_values$restoring > 0)
+    if(local_values$restoring == local_values$final_restore) {
+      local_values$show_masker <- FALSE
+    } else local_values$show_masker <- TRUE
   })
   
   output$masker <- renderUI({
-    if(!local_values$restore_final){
+    if(local_values$show_masker){
       tagList(
-      div(style = "width:100%; position:relative; background-color:#ecf0f5; z-index:2; display:flex; justify-content:center",
+      div(class = "centerdiv", style = "width:100%; position:relative; background-color:#ecf0f5; z-index:2",
           div("Restoring...", icon("refresh", class = "fa-spin fa-2x"))
       ),
       div(style = "width:100%; height:1000px;position:absolute; background-color:#ecf0f5; z-index:2000"
@@ -67,7 +69,7 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    if(!local_values$restore_final){
+    if(local_values$show_masker){
       hide("main")
     } else shinyjs::show("main")
   })
@@ -281,56 +283,56 @@ shinyServer(function(input, output, session) {
 
   add_probabilistic <- NULL
   
-  # output$PSA <- renderUI({
-  #   req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
-  #   isolate(choices <- get_names_SA(input, values))
-  #   req(length(choices) > 0)
-  # 
-  #   i = 0
-  #   tagList(
-  #     column(12,
-  #            uiOutput("PSAtable")
-  #     ),
-  #     column(12,
-  #            div(class="centerdiv",
-  #                actionButton("addProbabilistic", "Add a probabilistic value")
-  #            ))
-  #   )
-  # })
+  output$PSA <- renderUI({
+    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    # isolate(choices <- get_names_SA(input, values))
+    # req(length(choices) > 0)
+
+    i = 0
+    tagList(
+      column(12,
+             uiOutput("PSAtable")
+      ),
+      column(12,
+             div(class="centerdiv",
+                 actionButton("addProbabilistic", "Add a probabilistic value")
+             ))
+    )
+  })
   
-  # output$PSAtable <- renderUI({
-  #   req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
-  #   isolate(choices <- get_names_SA(input, values))
-  #   req(length(choices) > 0)
-  #   lapply(0:values$nProbabilistic, function(i){
-  #     show_PSA_div(input, values, choices, i)
-  #   })
-  # })
+  output$PSAtable <- renderUI({
+    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    choices <- get_names_SA(input, values)
+    req(length(choices) > 0)
+    lapply(0:values$nProbabilistic, function(i){
+      show_PSA_div(input, values, choices, i)
+    })
+  })
   
     observeEvent(input$addProbabilistic, {
     values$nProbabilistic <- values$nProbabilistic + 1
     
   })
     
-  # output$addMultinomial <- renderUI({
-  #   req(values$nProbabilistic > 0)
-  #   isolate(choices <- get_names_SA(input, values))
-  #   lapply(0:values$nProbabilistic, function(i){
-  #     req(input[[paste0("PSADistrib", i)]])
-  #     if (input[[paste0("PSADistrib", i)]] == "Multinomial"){
-  #       req(input[[paste0("PSAParam1", i)]])
-  #       lapply(seq_len(input[[paste0("PSAParam1", i)]]), function(j){
-  #         fluidRow(
-  #           column(4, 
-  #           if (j == 1) textInput(paste0("PSAMultinomName", i, j), label = "Parameter", value = input[[paste0("PSAGlobalParamName", i)]]) %>% disabled
-  #           else  selectInput(paste0("PSAMultinomName", i, j), label = "Parameter", choices = choices, selected = ifelse(!is.null(input[[paste0("PSAMultinomName", i, j)]]), input[[paste0("PSAMultinomName", i, j)]], ""))
-  #         ),
-  #         column(4, numericInput("PSAMultinomValue", "Value", 0))
-  #         )
-  #       })
-  #     }
-  #   })
-  # })
+  output$addMultinomial <- renderUI({
+    req(values$nProbabilistic > 0)
+    isolate(choices <- get_names_SA(input, values))
+    lapply(0:values$nProbabilistic, function(i){
+      req(input[[paste0("PSADistrib", i)]])
+      if (input[[paste0("PSADistrib", i)]] == "Multinomial"){
+        req(input[[paste0("PSAParam1", i)]])
+        lapply(seq_len(input[[paste0("PSAParam1", i)]]), function(j){
+          fluidRow(
+            column(4,
+            if (j == 1) textInput(paste0("PSAMultinomName", i, j), label = "Parameter", value = input[[paste0("PSAGlobalParamName", i)]]) %>% disabled
+            else  selectInput(paste0("PSAMultinomName", i, j), label = "Parameter", choices = choices, selected = ifelse(!is.null(input[[paste0("PSAMultinomName", i, j)]]), input[[paste0("PSAMultinomName", i, j)]], ""))
+          ),
+          column(4, numericInput("PSAMultinomValue", "Value", 0))
+          )
+        })
+      }
+    })
+  })
   
   output$outInit <- renderUI({
     #####
