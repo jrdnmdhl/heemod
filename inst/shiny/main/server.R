@@ -1,6 +1,7 @@
 shinyServer(function(input, output, session) {
   values <- reactiveValues(nGlobalParameters = 1, nEquation = 0, nRgho = 0, nSurvival = 0, 
                            nTimedep = 0, nDeterministic = 0, nProbabilistic = 0, moduleEdit = FALSE)
+  local_values <- reactiveValues(restoring = 0, restoring_time = Sys.time(), restore_final = FALSE)
   
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
@@ -14,7 +15,8 @@ shinyServer(function(input, output, session) {
     walk(nameValues, function(x){
       values[[x]] <- state$values[[x]]
     })
-    updateTabItems(session, "main", "States" )
+    local_values$last_tab <- input$main
+    
   })
   
   onRestored(function(state) {
@@ -25,8 +27,66 @@ shinyServer(function(input, output, session) {
     for (out in output_names){
       outputOptions(output, out, suspendWhenHidden = FALSE)
     }
+    local_values$restoring <- 1
+    local_values$restoring_time <- Sys.time()
   })
   
+  observe({
+    if (local_values$restoring == 1){
+      invalidateLater(1000)
+      if (Sys.time() - local_values$restoring_time > 2){
+        updateTabItems(session, "main", "tab_global_parameters" )
+
+        local_values$restoring <- 2
+        local_values$restoring_time <- Sys.time()
+      }
+    }
+  })
+  observe({
+    if (local_values$restoring == 2){
+      invalidateLater(1000)
+      if (Sys.time() - local_values$restoring_time > 2){
+        updateTabItems(session, "main", "tab_dsa" )
+        local_values$restoring <- 3
+        local_values$restoring_time <- Sys.time()
+      }
+    }
+  })
+  observe({
+    if (local_values$restoring == 3){
+      invalidateLater(1000)
+      if (Sys.time() - local_values$restoring_time > 2){
+        updateTabItems(session, "main", local_values$last_tab )
+        local_values$restoring <- 4
+        local_values$restoring_time <- Sys.time()
+      }
+    }
+  })
+  
+  observe({
+    if(local_values$restoring == FINAL_RESTORE | local_values$restoring  == 0) {
+      local_values$restore_final <- TRUE
+    } else local_values$restore_final <- FALSE
+  })
+  
+  output$masker <- renderUI({
+    if(!local_values$restore_final){
+      tagList(
+      div(style = "width:100%; position:relative; background-color:#ecf0f5; z-index:2; display:flex; justify-content:center",
+          div("Restoring...", icon("refresh", class = "fa-spin fa-2x"))
+      ),
+      div(style = "width:100%; height:1000px;position:absolute; background-color:#ecf0f5; z-index:2000"
+      )
+      )
+    }
+  })
+  
+  observe({
+    if(!local_values$restore_final){
+      hide("main")
+    } else shinyjs::show("main")
+  })
+
   setBookmarkExclude(
     c(
       paste0(MODULES, "OK"),

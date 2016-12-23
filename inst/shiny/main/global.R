@@ -8,6 +8,7 @@ library(purrr)
 
 REGION <- NULL
 COUNTRY <- NULL
+FINAL_RESTORE <- 4
 
 try({
   REGION <- get_gho_codes(dimension = "REGION")

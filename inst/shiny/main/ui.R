@@ -50,6 +50,7 @@ function(request) {
             "justify-content:center"
           )
         )),
+        uiOutput("masker"),
       tabItems(
         tabItem(
           tabName = "tab_states",
