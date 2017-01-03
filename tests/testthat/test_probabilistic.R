@@ -4,8 +4,8 @@ context("Probabilistic analysis")
 test_that(
   "Probabilistic analysis works", {
     mod1 <-
-      define_model(
-        transition_matrix = define_matrix(
+      define_strategy(
+        transition = define_transition(
           .5, .5,
           .1, .9
         ),
@@ -20,8 +20,8 @@ test_that(
         
       )
     mod2 <-
-      define_model(
-        transition_matrix = define_matrix(
+      define_strategy(
+        transition = define_transition(
           .5, .5,
           .1, .9
         ),
@@ -36,7 +36,7 @@ test_that(
         
       )
     
-    res2 <- run_models(
+    res2 <- run_model(
       mod1, mod2,
       parameters = define_parameters(
         age_init = 60,
@@ -50,7 +50,7 @@ test_that(
       method = "beginning"
     )
     
-    rsp1 <- define_distrib(
+    rsp1 <- define_psa(
       age_init ~ normal(60, 10),
       cost_init ~ normal(1000, 100),
       
@@ -59,7 +59,7 @@ test_that(
         .4, 1
       ), byrow = TRUE, ncol = 2)
     )
-    rsp2 <- define_distrib(
+    rsp2 <- define_psa(
       age_init ~ normal(60, 10),
       cost_init ~ normal(1000, 100),
       
@@ -68,20 +68,20 @@ test_that(
     
     set.seed(1)
     # with run_model result
-    ndt1 <- run_probabilistic(res2, resample = rsp1, N = 10)
-    ndt2 <- run_probabilistic(res2, resample = rsp1, N = 1)
+    ndt1 <- run_psa(res2, resample = rsp1, N = 10)
+    ndt2 <- run_psa(res2, resample = rsp1, N = 1)
     
     expect_error(
-      run_probabilistic(res2, resample = rsp1, N = NULL)
+      run_psa(res2, resample = rsp1, N = NULL)
     )
     
     plot(ndt1, type = "ce")
     plot(ndt1, type = "ac")
     
     set.seed(1)
-    ndt3 <- run_probabilistic(res2, resample = rsp2, N = 10)
+    ndt3 <- run_psa(res2, resample = rsp2, N = 10)
     
-    x <- define_distrib(
+    x <- define_psa(
       rate1 + rate2 + rate3 ~ multinom(10, 50, 40),
       a + b ~ multinom(15, 30)
     )
@@ -90,18 +90,16 @@ test_that(
     
     res2 <- heemod:::eval_resample(x, 2)
     
-    expect_output(
-      str(head(as.data.frame(ndt2))),
-      '2 obs. of  8 variables:
- $ cost        : num  10653 38163
- $ ly          : num  10 10
- $ age_init    : num  66.6 66.6
- $ cost_init   : num  930 930
- $ .model_names: chr  "I" "II"
- $ .index      : int  1 1
- $ .cost       : num  10653 38163
- $ .effect     : num  10 10',
-      fixed = TRUE
+    expect_equal(
+      nrow(ndt2$psa), 2
+    )
+    
+    expect_equal(
+      round(ndt2$psa$.cost), c(10653, 38163)
+    )
+    
+    expect_equal(
+      round(summary(ndt2)$res_comp$.cost[2]), 27511
     )
 
     expect_equal(
@@ -118,22 +116,22 @@ test_that(
         row.names = c(NA, -2L),
         class = "data.frame")
     )
+    
     expect_identical(ndt1, ndt3)
-    expect_output(
-      str(head(as.data.frame(ndt2))),
-      '2 obs. of  8 variables:
- $ cost        : num  10653 38163
- $ ly          : num  10 10
- $ age_init    : num  66.6 66.6
- $ cost_init   : num  930 930
- $ .model_names: chr  "I" "II"
- $ .index      : int  1 1
- $ .cost       : num  10653 38163
- $ .effect     : num  10 10',
-      fixed = TRUE
+    
+    expect_equal(
+      nrow(ndt1$psa), 20
     )
     
-    rsp3 <- define_distrib(
+    expect_equal(
+      round(ndt1$psa$.cost)[1:3], c(12515, 10923, 13662)
+    )
+    
+    expect_equal(
+      round(summary(ndt1)$res_comp$.cost[2]), 25085
+    )
+    
+    rsp3 <- define_psa(
       age_init ~ lognormal(60, 10),
       cost_init ~ make_gamma (1000, 100),
       p_trans ~ prop(.5, 100),
@@ -149,7 +147,7 @@ test_that(
 1 64.82732  1105.112    0.56 0.4842654
 2 77.79468  1164.304    0.57 0.6539179"
     )
-    res2 <- suppressWarnings(run_models(
+    res2 <- suppressWarnings(run_model(
       mod1, mod2,
       parameters = define_parameters(
         age_init = 60,
@@ -160,9 +158,9 @@ test_that(
       cycles = 10,
       method = "beginning"
     ))
-    expect_error(run_probabilistic(res3, resample = rsp2, N = 10))
+    expect_error(run_psa(res3, resample = rsp2, N = 10))
     expect_error(
-      define_distrib(
+      define_psa(
         age_init ~ normal(60, 10),
         age_init ~ normal(1000, 100),
         

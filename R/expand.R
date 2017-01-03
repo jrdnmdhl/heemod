@@ -71,7 +71,7 @@ expand_state.uneval_matrix <- function(x, state_pos,
     sn[state_pos] <- sprintf(".%s_%i", state_name, n)
     sn <- insert(sn, state_pos, sprintf(".%s_%i", state_name, n + 1))
     
-    tm_ext <- define_matrix_(res, sn)
+    tm_ext <- define_transition_(res, sn)
     
     expand_state(
       x = tm_ext,
@@ -180,7 +180,7 @@ interp_heemod.default <- function(x, more = NULL, ...) {
 #' @rdname interp_heemod
 interp_heemod.uneval_matrix <- function(x, ...) {
   res <- interp_heemod.default(x, ...)
-  define_matrix_(res, get_state_names(x))
+  define_transition_(res, get_state_names(x))
 }
 
 #' @export
@@ -207,4 +207,77 @@ all.funs <- function(expr) {
     with_funs[names(without_funs)] -
     without_funs
   names(with_funs)[with_funs > 0]
+}
+
+complete_scl <- function(scl, state_names,
+                         strategy_names, cycles) {
+  uni <- FALSE
+  if (is.numeric(scl) && length(scl) == 1 && is.null(names(scl))) {
+    uni <- TRUE
+    stopifnot(
+      scl <= cycles,
+      scl > 0,
+      ! is.na(scl),
+      is.wholenumber(scl)
+    )
+    cycles <- scl
+  }
+  
+  res <- lapply(
+    strategy_names,
+    function(x) rep(cycles, length(state_names)) %>% 
+      setNames(state_names)
+  ) %>% 
+    setNames(strategy_names)
+  
+  if (is.null(scl) || uni) {
+    return(res)
+  }
+  
+  check_scl <- function(scl, cycles) {
+    if (is.null(names(scl))) {
+      stop("'state_cycle_limit' must be named.")
+    }
+    if (any(duplicated(names(scl)))) {
+      stop("'state_cycle_limit' names must be unique.")
+    }
+    if (any(pb <- ! names(scl) %in% state_names)) {
+      stop(sprintf(
+        "Some 'state_cycle_limit' names are not state names: %s.",
+        paste(names(scl)[pb], collapse = ", ")
+      ))
+    }
+    
+    stopifnot(
+      ! is.na(scl),
+      scl > 0,
+      scl <= cycles,
+      is.wholenumber(scl)
+    )
+  }
+  
+  if (is.numeric(scl)) {
+    check_scl(scl, cycles)
+    for (i in seq_along(res)) {
+      res[[i]][names(scl)] <- scl
+    }
+    return(res)
+  }
+  
+  if (is.list(scl)) {
+    if (any(pb <- ! names(scl) %in% strategy_names)) {
+      stop(sprintf(
+        "Some 'state_limit_cycle' names are not model names: %s.",
+        paste(names(scl)[pb], collapse = ", ")
+      ))
+    }
+    for (n in names(scl)) {
+      check_scl(scl[[n]], cycles)
+      
+      res[[n]][names(scl[[n]])] <- scl[[n]]
+    }
+    return(res)
+  }
+  
+  stop("'Incorrect 'state_cycle_limit' type.")
 }
