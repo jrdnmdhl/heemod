@@ -38,8 +38,10 @@ Suggests: diagram,
           parallel,
           formatR,
           mgcv,
+          purrr,
           readxl,
           rmarkdown,
+          shinydashboard,
           testthat
 URL: https://github.com/pierucci/heemod, https://pierucci.org
 BugReports: https://github.com/pierucci/heemod/issues

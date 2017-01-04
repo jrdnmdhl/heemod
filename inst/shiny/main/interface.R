@@ -53,7 +53,7 @@ ux_state_names <- function(input) {
 ux_parameters <- function(input, values) {
   seq_param <- seq_len(ux_nb_parameters(values))
   
-  trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+  trim <- function(x) gsub("^\\s+|\\s+$", "", x)
   
   names_parameters <- unlist(
     shiny_subset(
@@ -61,7 +61,7 @@ ux_parameters <- function(input, values) {
       paste0("globalParamName", seq_param)
     )
   ) %>%
-    trim
+    trim()
   
   values_parameters <- unlist(
     shiny_subset(
@@ -93,7 +93,7 @@ ux_parameters <- function(input, values) {
     
     param_dots <- c(
       lazyeval::lazy_dots(
-        mortality_rate = get_who_mr(
+        mortality_rate = rgho::get_who_mr(
           age = ux_morta_age(input) + markov_cycle,
           sex = ux_morta_sex(input),
           country = ux_morta_country(input)
@@ -102,7 +102,7 @@ ux_parameters <- function(input, values) {
       param_dots
     )
     
-    define_parameters_(
+    heemod::define_parameters_(
       param_dots
     )
   } else if (! test(values_parameters) & ux_use_morta(input)) {
@@ -114,7 +114,7 @@ ux_parameters <- function(input, values) {
       )
     )
     
-    define_parameters_(
+    heemod::define_parameters_(
       param_dots
     )
     
@@ -123,12 +123,12 @@ ux_parameters <- function(input, values) {
     
     param_dots <- lazyeval::as.lazy_dots(values_parameters)
     
-    define_parameters_(
+    heemod::define_parameters_(
       param_dots
     )
     
   } else {
-    define_parameters()
+    heemod::define_parameters()
   }
   
   res
@@ -164,7 +164,7 @@ ux_matrix <- function(input, model_number) {
       )
     )
     
-    define_matrix_(
+    heemod::define_transition_(
       .dots = lazyeval::as.lazy_dots(mat_values),
       state_names = ux_state_names(input)
     )
@@ -207,7 +207,7 @@ ux_state <- function(input, model_number, state_number) {
   
   names(state_values) <- state_value_names
   
-  define_state_(
+  heemod::define_state_(
     lazyeval::as.lazy_dots(state_values)
   )
 }
@@ -225,12 +225,12 @@ ux_state_list <- function(input, model_number) {
       )
   )
   names(list_states) <- ux_state_names(input)
-  define_state_list_(list_states)
+  heemod:::define_state_list_(list_states)
 }
 
 ux_model <- function(input, values, model_number) {
-  define_model_(
-    transition_matrix = ux_matrix(
+  heemod::define_strategy_(
+    transition = ux_matrix(
       input = input,
       model_number = model_number
     ),
@@ -283,20 +283,21 @@ ux_run_models_raw <- function(input, values) {
       )
   )
   names(list_models) <- ux_model_names(input)
-  
-  run_models_(
-    # parameters = ux_parameters(
-    #   input = input,
-    #   values = values
-    # ),
-    parameters = define_parameters(),
-    list_models = list_models,
+  browser()
+  heemod::run_model_(
+    parameters = ux_parameters(
+      input = input,
+      values = values
+    ),
+    uneval_strategy_list = list_models,
     init = ux_init(input),
     cycles = ux_cycles(input),
     method = ux_method(input),
     cost = ux_cost(input),
     effect = ux_effect(input),
-    base_model = ux_base_model(input)
+    state_cycle_limit = NULL,
+    central_strategy = ux_base_model(input),
+    inflow = rep(0, length(init))
   )
 }
 

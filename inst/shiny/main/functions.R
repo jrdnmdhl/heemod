@@ -9,10 +9,10 @@ show_PSA_div <- function(input, values, choices, n){
                           "Multinomial" = "Nb parameters"
                           ) 
     psa_param2 <- switch (input[[paste0("PSADistrib", n)]],
-                          "Normal" = "Standard Deviation",
-                          "Lognormal" = "Standard Deviation",
+                          "Normal" = "SD",
+                          "Lognormal" = "SD",
                           "Binomial" = "Size",
-                          "Gamma" = "Standard Deviation",
+                          "Gamma" = "SD",
                           "Logitnormal" = "Sigma"
     ) 
   }
@@ -279,11 +279,11 @@ searchCountry <- function(n, input){
 
 show_module <- function(module, edit, n, table_title, table_body)  {
   if (edit){
-    wellPanel(id = paste0("editing", upFirst(module)),
-              fluidRow(id = paste0("editing", upFirst(module), "Title", n), class = "row-eq-height",
+    wellPanel(id = paste0("editing", Hmisc::upFirst(module)),
+              fluidRow(id = paste0("editing", Hmisc::upFirst(module), "Title", n), class = "row-eq-height",
                        table_title
               ),
-              fluidRow(id = paste0("editing", upFirst(module), "Body", n), class = "row-eq-height",
+              fluidRow(id = paste0("editing", Hmisc::upFirst(module), "Body", n), class = "row-eq-height",
                        table_body
               ),
               actionButton(paste0(module, "OK"), "OK")

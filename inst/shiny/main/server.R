@@ -59,23 +59,23 @@ shinyServer(function(input, output, session) {
   output$masker <- renderUI({
     if(local_values$show_masker){
       tagList(
-      div(class = "centerdiv", style = "width:100%; position:relative; background-color:#ecf0f5; z-index:2",
-          div("Restoring...", icon("refresh", class = "fa-spin fa-2x"))
-      ),
-      div(style = "width:100%; height:1000px;position:absolute; background-color:#ecf0f5; z-index:2000"
-      )
+        div(class = "centerdiv", style = "width:100%; position:relative; background-color:#ecf0f5; z-index:2",
+            div("Restoring...", icon("refresh", class = "fa-spin fa-2x"))
+        ),
+        div(style = "width:100%; height:1000px;position:absolute; background-color:#ecf0f5; z-index:2000"
+        )
       )
     }
   })
   
   observe({
-     if(local_values$show_masker){
-       addClass(class = "restoring", selector = "#main li > a")
-     } else {
-       removeClass(class = "restoring", selector = "#main li > a")
-     }
+    if(local_values$show_masker){
+      shinyjs::addClass(class = "restoring", selector = "#main li > a")
+    } else {
+      shinyjs::removeClass(class = "restoring", selector = "#main li > a")
+    }
   })
-
+  
   setBookmarkExclude(
     c(
       paste0(MODULES, "OK"),
@@ -87,26 +87,26 @@ shinyServer(function(input, output, session) {
   )
   
   observe({ ##?WHY??
-  output$searchCountry <- renderUI({
-    n <- values$nRho
-    req(input[[paste0("rghoRegion", n)]])
-    countryCodes <- filter_gho(
-      COUNTRY,
-      WHO_REGION_CODE == input[[paste0("rghoRegion", n)]]
-    )
-    countryNames <- countryCodes %>%
-      attr("labels")
-    
-    vCountryCodes <- as.vector(c("Global", countryCodes))
-    names(vCountryCodes) <- c("Global", countryNames)
-    
-    selectizeInput(
-      paste0("rghoCountry", n),
-      NULL,
-      choices = vCountryCodes,
-      selected = ifelse(!is.null(input[[paste0("rghoCountry", n)]]), input[[paste0("rghoCountry", n)]], "GLOBAL")
-    )
-  })
+    output$searchCountry <- renderUI({
+      n <- values$nRho
+      req(input[[paste0("rghoRegion", n)]])
+      countryCodes <- filter_gho(
+        COUNTRY,
+        WHO_REGION_CODE == input[[paste0("rghoRegion", n)]]
+      )
+      countryNames <- countryCodes %>%
+        attr("labels")
+      
+      vCountryCodes <- as.vector(c("Global", countryCodes))
+      names(vCountryCodes) <- c("Global", countryNames)
+      
+      selectizeInput(
+        paste0("rghoCountry", n),
+        NULL,
+        choices = vCountryCodes,
+        selected = ifelse(!is.null(input[[paste0("rghoCountry", n)]]), input[[paste0("rghoCountry", n)]], "GLOBAL")
+      )
+    })
   })
   
   observe_timedepNew <- list()
@@ -114,7 +114,7 @@ shinyServer(function(input, output, session) {
   observe_nTimedep <<- observe({
     lapply(0:values$nTimedep, function(n){
       isolate({
-        if (map_lgl(observe_timedepNew[n + 1], is.null)){ #I would have prefered : if (is.null(observe_timedepNew[[n+1]]))
+        if (purrr::map_lgl(observe_timedepNew[n + 1], is.null)){ #I would have prefered : if (is.null(observe_timedepNew[[n+1]]))
           observe_timedepNew[[n + 1]] <<- observeEvent(input[[paste0("timedepNew", n)]], {
             if (is.null(values[[paste0("nTimedepNC", n)]]))
               values[[paste0("nTimedepNC", n)]] <- 1
@@ -125,8 +125,8 @@ shinyServer(function(input, output, session) {
       })
     })
   }) 
-
-
+  
+  
   observe({
     inFile <- input$loadButton
     if (is.null(inFile))
@@ -168,12 +168,12 @@ shinyServer(function(input, output, session) {
               input[[paste0("stateName",i)]],
               LETTERS[i]))
         })
-      }) %>% box
+      }) %>% shinydashboard::box()
   })
   
   output$nameStateVariables <- renderUI({
     req(input$nbStateVariables)
-
+    
     lapply(
       seq_len(input$nbStateVariables),
       function(i) {
@@ -209,7 +209,7 @@ shinyServer(function(input, output, session) {
               input[[paste0("strategyName",i)]],
               as.character(as.roman(i))))
         })
-      }) %>% box
+      }) %>% shinydashboard::box()
   })
   
   
@@ -254,56 +254,66 @@ shinyServer(function(input, output, session) {
   })
   
   output$DSA <- renderUI({
-    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    req(sum(c(values$nEquation, values$nRgho,
+              values$nSurvival, values$nTimedep)) > 0)
     # choices <- get_names_SA(input, values)
     # req(length(choices) > 0)
-    i = 0
+    i <- 0
     tagList(
-    column(12,
-           uiOutput("DSAtable")
-           )
+      column(
+        12,
+        uiOutput("DSAtable")
+      )
       ,
-    column(12,
-    div(class="centerdiv",
-        actionButton("addDeterministic", "Add a deterministic value")
-    ))
+      column(
+        12,
+        div(
+          class="centerdiv",
+          actionButton(
+            "addDeterministic", "Add a DSA value")
+        ))
     )
   })
-
+  
   observeEvent(input$addDeterministic, {
     values$nDeterministic <- values$nDeterministic + 1
   })
-
+  
   output$DSAtable <- renderUI({
-    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    req(sum(c(values$nEquation, values$nRgho,
+              values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     lapply(0:values$nDeterministic, function(i){
       show_DSA_div(input, values, choices, i)
     })
   })
-
+  
   add_probabilistic <- NULL
   
   output$PSA <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
     # isolate(choices <- get_names_SA(input, values))
     # req(length(choices) > 0)
-
+    
     i = 0
     tagList(
-      column(12,
-             uiOutput("PSAtable")
+      column(
+        12,
+        uiOutput("PSAtable")
       ),
-      column(12,
-             div(class="centerdiv",
-                 actionButton("addProbabilistic", "Add a probabilistic value")
-             ))
+      column(
+        12,
+        div(class="centerdiv",
+            actionButton(
+              "addProbabilistic", "Add a PSA value")
+        ))
     )
   })
   
   output$PSAtable <- renderUI({
-    req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
+    req(sum(c(values$nEquation, values$nRgho,
+              values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     lapply(0:values$nProbabilistic, function(i){
@@ -311,11 +321,11 @@ shinyServer(function(input, output, session) {
     })
   })
   
-    observeEvent(input$addProbabilistic, {
+  observeEvent(input$addProbabilistic, {
     values$nProbabilistic <- values$nProbabilistic + 1
     
   })
-    
+  
   output$addMultinomial <- renderUI({
     req(values$nProbabilistic > 0)
     isolate(choices <- get_names_SA(input, values))
@@ -325,11 +335,28 @@ shinyServer(function(input, output, session) {
         req(input[[paste0("PSAParam1", i)]])
         lapply(seq_len(input[[paste0("PSAParam1", i)]]), function(j){
           fluidRow(
-            column(4,
-            if (j == 1) textInput(paste0("PSAMultinomName", i, j), label = "Parameter", value = input[[paste0("PSAGlobalParamName", i)]]) %>% disabled
-            else  selectInput(paste0("PSAMultinomName", i, j), label = "Parameter", choices = choices, selected = ifelse(!is.null(input[[paste0("PSAMultinomName", i, j)]]), input[[paste0("PSAMultinomName", i, j)]], ""))
-          ),
-          column(4, numericInput("PSAMultinomValue", "Value", 0))
+            column(
+              4,
+              if (j == 1) {
+                textInput(
+                  paste0("PSAMultinomName", i, j),
+                  label = "Parameter",
+                  value = input[[paste0("PSAGlobalParamName", i)]]) %>%
+                  shinyjs::disabled()
+              }
+              else {
+                selectInput(
+                  paste0("PSAMultinomName", i, j),
+                  label = "Parameter",
+                  choices = choices,
+                  selected = ifelse(
+                    ! is.null(input[[paste0("PSAMultinomName", i, j)]]),
+                    input[[paste0("PSAMultinomName", i, j)]],
+                    ""))
+                }
+            ),
+            column(
+              4, numericInput("PSAMultinomValue", "Value", 0))
           )
         })
       }
@@ -369,18 +396,9 @@ shinyServer(function(input, output, session) {
                       numericInput(
                         paste0("init", i),
                         label = NULL,
-                        value = 1000,
+                        value = 0,
                         width="100%"
-                      )
-                    }
-                  )
-                )
-              )
-            }
-          )
-        )
-      )
-    )
+                      )})))}))))
   })
   
   output$outModel <- renderUI({
@@ -504,24 +522,24 @@ shinyServer(function(input, output, session) {
     ux_run_models_raw(input, values)
   })
   
-
+  
   ### prepare_timedep has a big problem with reactivity : there are 2 renderUI imbricated inside 1 renderUI. 
   ### When one of the renderUI is updated, all the others are invalidated. 
   
   prepare_timedep <- function(n, edit, input, values) {
-      table_body <- tagList(
-        column(2, textInput(paste0("timedepName", n), NULL, ifelse(!is.null(input[[paste0("timedepName", n)]]), input[[paste0("timedepName", n)]], ""))),
-        column(2, selectInput(paste0("timedepType", n), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected = ifelse(!is.null(input[[paste0("timedepType", n)]]), input[[paste0("timedepType", n)]], character(0)))),
-        column(8, renderUI({
-          fluidRow(
+    table_body <- tagList(
+      column(2, textInput(paste0("timedepName", n), NULL, ifelse(!is.null(input[[paste0("timedepName", n)]]), input[[paste0("timedepName", n)]], ""))),
+      column(2, selectInput(paste0("timedepType", n), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected = ifelse(!is.null(input[[paste0("timedepType", n)]]), input[[paste0("timedepType", n)]], character(0)))),
+      column(8, renderUI({
+        fluidRow(
           if (!is.null(input[[paste0("timedepType", n)]])){
             if (input[[paste0("timedepType", n)]] == "constant"){
               column(9,
-                  renderUI({
-                fluidRow(
-                  column(4, textInput(paste0("timedepValueC", n), NULL,  isolate(ifelse(!is.null(input[[paste0("timedepValueC", n)]]), input[[paste0("timedepValueC", n)]],""))))
-                )
-                })
+                     renderUI({
+                       fluidRow(
+                         column(4, textInput(paste0("timedepValueC", n), NULL,  isolate(ifelse(!is.null(input[[paste0("timedepValueC", n)]]), input[[paste0("timedepValueC", n)]],""))))
+                       )
+                     })
               )
             } else {
               if (is.null(values[[paste0("nTimedepNC", n)]])) {
@@ -530,53 +548,53 @@ shinyServer(function(input, output, session) {
               tagList(
                 column(9, 
                        renderUI({
-                       lapply(0:values[[paste0("nTimedepNC", n)]], function(i){
-                             fluidRow(
-                               column(4, textInput(paste0("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], "")))),
-                               column(4, numericInput(paste0("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]],"")))),
-                               column(4, numericInput(paste0("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], ""))))
-                             )
-                           })
+                         lapply(0:values[[paste0("nTimedepNC", n)]], function(i){
+                           fluidRow(
+                             column(4, textInput(paste0("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], "")))),
+                             column(4, numericInput(paste0("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]],"")))),
+                             column(4, numericInput(paste0("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], ""))))
+                           )
                          })
-                
+                       })
+                       
                 ),
                 column(2, actionButton(paste0("timedepNew", n), icon("plus")))
               )
             }
           }
-          )
-        })
         )
-      ) 
-      table_title <- tagList(
-        column(2, strong("Name")),
-        column(2, strong("Type of time-dependent variable")),
-        column(8, renderUI({
-          fluidRow(
+      })
+      )
+    ) 
+    table_title <- tagList(
+      column(2, strong("Name")),
+      column(2, strong("Type of time-dependent variable")),
+      column(8, renderUI({
+        fluidRow(
           if (!is.null(input[[paste0("timedepType", n)]])){
             if (input[[paste0("timedepType", n)]] == "constant"){
               column(9,
                      fluidRow(
-                      column(4, strong("Value"))
+                       column(4, strong("Value"))
                      )
               )
             } else {
               tagList(
                 column(9, 
-                  fluidRow(
-                    column(4, strong("Value")),
-                    column(4, strong("Cycle Start")),
-                    column(4, strong("Cycle End"))
-                  )
+                       fluidRow(
+                         column(4, strong("Value")),
+                         column(4, strong("Cycle Start")),
+                         column(4, strong("Cycle End"))
+                       )
                 )
               )
             }
-              
+            
           }
-          )
-        }))
-      )
-      return(list(title = table_title, body = table_body))
+        )
+      }))
+    )
+    return(list(title = table_title, body = table_body))
   }
   prepare_rgho <- function(n, edit, input, values) {
     table_body <- tagList(
@@ -586,7 +604,7 @@ shinyServer(function(input, output, session) {
       column(2, searchRegion(n, input)),
       column(2, renderUI({
         searchCountry(n, input)
-        }))
+      }))
     )
     table_title <- tagList(
       column(2, strong("Name")),
@@ -611,44 +629,44 @@ shinyServer(function(input, output, session) {
   }
   
   prepare_survival <- function(n, edit, input, values) {
-   table_body <- tagList(
-     column(12,
-     renderUI({
-       fluidRow(
-         column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
-         column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
-         column(2, numericInput(paste0("survivalLambda", n), NULL, 
-                                isolate(ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], "")))),
-         column(2, 
-                if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
-                  isolate(numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],"")))
-                }
-         ))
-     })
-     )
-   )
-   table_title <- tagList(
-    column(12, 
-           fluidRow(
-             column(2, strong("Name")), 
-             column(2, strong("Distribution")), 
-             column(2, strong("Lambda")),
-             column(2, renderUI({
-               if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
-                 strong("k")
-               }
-             }))
-           )
+    table_body <- tagList(
+      column(12,
+             renderUI({
+               fluidRow(
+                 column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
+                 column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
+                 column(2, numericInput(paste0("survivalLambda", n), NULL, 
+                                        isolate(ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], "")))),
+                 column(2, 
+                        if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
+                          isolate(numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],"")))
+                        }
+                 ))
+             })
+      )
     )
-   )
-   return(list(title = table_title, body = table_body))
+    table_title <- tagList(
+      column(12, 
+             fluidRow(
+               column(2, strong("Name")), 
+               column(2, strong("Distribution")), 
+               column(2, strong("Lambda")),
+               column(2, renderUI({
+                 if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
+                   strong("k")
+                 }
+               }))
+             )
+      )
+    )
+    return(list(title = table_title, body = table_body))
   }
-
+  
   for (module in MODULES){
     edit <- FALSE
     output[[module]] <- renderUI({ # I can't figure out how to use the variable "module" inside the renderUI. I tried parent.env() with no success
       substitute({
-        nb_lines <- values[[paste0("n", upFirst(module))]]
+        nb_lines <- values[[paste0("n", Hmisc::upFirst(module))]]
         out <- lapply(seq_len(nb_lines) - 1, function(n){
           isolate({
             title_body <- do.call(paste0("prepare_", module), list(n, edit, input, values))
@@ -662,46 +680,58 @@ shinyServer(function(input, output, session) {
   
   output$globalParameters <- renderUI({
     tagList(
-    fluidRow(class="dropdown",
-             column(12,
-                 actionLink("newParam", "", icon("plus-circle", class="fa-3x rotateIcon"), style="margin-bottom:40px") %>% div,
-                 hidden(
-                   fluidRow(
-                     id = "tabnewParam",
-                     tags$ul(class = "dropdown-menu", style ="position:absolute; top:0; left:60px; display:block; background-color:rgba(255, 255, 255, 0.8)",
-                             lapply(seq_along(MODULES), function(i){
-                               tags$li(
-                                 actionLink(MODULES[i], names(MODULES)[i], class = "btn btn-link")
-                               )
-                             })
-                     )
-                   )
-                 )
-                 )
-             ),
-       lapply(MODULES, function(module){
-         fluidRow(
-           column(12,
-                  uiOutput(module)
-           )
-         )})
+      fluidRow(
+        class="dropdown",
+        column(
+          12,
+          actionLink(
+            "newParam", "",
+            icon(
+              "plus-circle", class="fa-3x rotateIcon"),
+            style="margin-bottom:40px") %>% shiny::div(),
+          shinyjs::hidden(
+            fluidRow(
+              id = "tabnewParam",
+              tags$ul(
+                class = "dropdown-menu",
+                style ="position:absolute; top:0; left:60px; display:block; background-color:rgba(255, 255, 255, 0.8)",
+                lapply(
+                  seq_along(MODULES), function(i){
+                    tags$li(
+                      actionLink(
+                        MODULES[i],
+                        names(MODULES)[i],
+                        class = "btn btn-link")
+                    )
+                  })
+              )
+            )
+          )
+        )
+      ),
+      lapply(MODULES, function(module){
+        fluidRow(
+          column(12,
+                 uiOutput(module)
+          )
+        )})
     )
   })
   
-  onevent(
+  shinyjs::onevent(
     "mouseenter",
     "newParam",
-    show(
+    shinyjs::show(
       "tabnewParam",
-      anim = F,
+      anim = FALSE,
       animType = "fade"
     ))
-  onevent(
+  shinyjs::onevent(
     "mouseleave",
     "globalParameters",
-    hide(
+    shinyjs::hide(
       "tabnewParam",
-      anim = F,
+      anim = FALSE,
       animType = "fade"
     ))
   
@@ -709,7 +739,7 @@ shinyServer(function(input, output, session) {
     observeEvent(input[[module]], {
       edit = TRUE
       for (mod in MODULES){
-          removeUI(paste0("#editing", upFirst(mod)))
+        removeUI(paste0("#editing", Hmisc::upFirst(mod)))
       }
       if (module ==  "rgho" && (is.null(REGION) | is.null(COUNTRY))){
         try({
@@ -721,30 +751,30 @@ shinyServer(function(input, output, session) {
         }
       }
       else {
-        n <- values[[paste0("n", upFirst(module))]]
+        n <- values[[paste0("n", Hmisc::upFirst(module))]]
         title_body <- do.call(paste0("prepare_", module), list(n, edit, input, values))
         insertUI("#addModule", ui=
-                 show_module(module, edit, n, title_body$title, title_body$body)
-          )
+                   show_module(module, edit, n, title_body$title, title_body$body)
+        )
       }
     })
   })
-
+  
   observeEvent(input$equationOK, {
     removeUI("#editingEquation")
     values$nEquation <- values$nEquation + 1
   })
-
+  
   observeEvent(input$rghoOK, {
     removeUI("#editingRgho")
     values$nRgho <- values$nRgho + 1
   })
-
+  
   observeEvent(input$survivalOK, {
     removeUI("#editingSurvival")
     values$nSurvival <- values$nSurvival + 1
   })
-
+  
   
   observeEvent(input$timedepOK, {
     removeUI("#editingTimedep")

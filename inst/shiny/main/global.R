@@ -1,17 +1,14 @@
 source("functions.R")
 source("interface.R")
+
 library(dplyr)
-library(Hmisc)
-library(heemod)
-library(rgho)
-library(purrr)
 
 REGION <- NULL
 COUNTRY <- NULL
 
 try({
-  REGION <- get_gho_codes(dimension = "REGION")
-  COUNTRY <- get_gho_codes(dimension="COUNTRY")
+  REGION <- rgho::get_gho_codes(dimension = "REGION")
+  COUNTRY <- rgho::get_gho_codes(dimension="COUNTRY")
 })
 
 MODULES <- c(
