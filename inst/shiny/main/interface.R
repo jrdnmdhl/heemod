@@ -55,7 +55,7 @@ ux_state_names <- function(input) {
   )
 }
 
-ux_parse_equation <- function(x) {
+ux_parse_equation <- function(x, input) {
   browser()
   stats::setNames(
     shiny_subset(input, paste0("equationValue", seq_len(x))),
@@ -66,7 +66,7 @@ ux_parse_equation <- function(x) {
 ux_parameters <- function(input, values) {
   
   info_param <- ux_nb_parameters(values)
-  ux_parse_equation(info_param$nEquation)
+  ux_parse_equation(info_param$nEquation, input)
   
   trim <- function(x) gsub("^\\s+|\\s+$", "", x)
   
