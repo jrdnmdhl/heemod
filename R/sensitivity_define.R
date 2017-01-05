@@ -49,6 +49,7 @@ define_dsa <- function(...) {
 }
 
 #' @rdname define_dsa
+#' @export
 define_dsa_ <- function(par_names, low_dots, high_dots) {
   
   check_names(par_names)

@@ -53,7 +53,9 @@ shinyServer(function(input, output, session) {
     req(local_values$restoring > 0)
     if(local_values$restoring == local_values$final_restore) {
       local_values$show_masker <- FALSE
-    } else local_values$show_masker <- TRUE
+    } else {
+      local_values$show_masker <- TRUE
+    }
   })
   
   output$masker <- renderUI({
@@ -419,10 +421,10 @@ shinyServer(function(input, output, session) {
   output$tableResults <- DT::renderDataTable({
     #####
     req(values$model)
-    req(values$summary_model$res)
+    req(values$summary_model$res_values)
     
     DT::datatable(
-      values$summary_model$res,
+      values$summary_model$res_values,
       options = list(
         searching = FALSE,
         paging = FALSE,
@@ -442,6 +444,14 @@ shinyServer(function(input, output, session) {
       tags$h3("Model comparison")
     )
   })
+  
+  output$plotCE <- renderPlot({
+    req(values$model)
+    req(values$summary_model$res_comp)
+    
+    plot(values$model, type = "ce")
+  },
+  width = 600)
   
   output$tableICER <- DT::renderDataTable({
     #####
@@ -464,64 +474,100 @@ shinyServer(function(input, output, session) {
     req(values$model)
     
     tagList(
-      tags$h3("Plot state membership count"),
+      tags$h3("State membership count"),
       selectInput(
         inputId = "modelPlotCounts",
-        label = "Model",
-        choices = as.vector(ux_model_names(input))
-      )
+        label = "Panneling",
+        choices = c("By strategy" = "by_strategy",
+                    "By state" = "by_state")
+      ),
+      checkboxInput("checkPlotCounts", "Free-Y")
     )
   })
   
   output$plotCounts <- renderPlot({
     #####
     req(values$model)
-    model <- input$modelPlotCounts
-    req(model)
+    panels <- input$modelPlotCounts
+    req(panels)
     plot(
       values$model,
       type = "counts",
-      model = model
+      panels = panels,
+      free_y = input$checkPlotCounts
     ) +
       ggplot2::theme_minimal() +
       ggplot2::scale_colour_brewer(
-        name = "State",
+        name = "Count",
         palette = "Set1"
       )
   },
   width = 600)
   
-  output$debugParams <- renderUI({
-    req(ux_nb_models(input))
+  output$outValues <- renderUI({
+    #####
+    
+    req(values$model)
+    
     tagList(
-      lapply(
-        seq_len(ux_nb_models(input)),
-        function(x) {
-          renderPrint(ux_parameters(input, values, x))
-        }
+      tags$h3("State values"),
+      selectInput(
+        inputId = "modelPlotValues",
+        label = "Panneling",
+        choices = c("By strategy" = "by_strategy",
+                    "By value" = "by_value")
+      ),
+      checkboxInput("checkPlotValues", "Free-Y")
+    )
+  })
+  
+  output$plotValues <- renderPlot({
+    #####
+    req(values$model)
+    panels <- input$modelPlotValues
+    req(panels)
+    plot(
+      values$model,
+      type = "values",
+      panels = panels,
+      free_y = input$checkPlotValues
+    ) +
+      ggplot2::theme_minimal() +
+      ggplot2::scale_colour_brewer(
+        name = "Value",
+        palette = "Set1"
+      )
+  },
+  width = 600)
+  
+  output$outDSA <- renderUI({
+    req(values$nDeterministic > 0)
+    req(values$model)
+    
+    
+    tagList(
+      selectInput(
+        inputId = "dsaPlotResult",
+        label = "Result to plot",
+        choices = c(Cost = "cost", Effect = "effect", ICER = "icer")
+      ),
+      selectInput(
+        inputId = "dsaPlotType",
+        label = "Type of result",
+        choices = c(Simple = "simple", Difference = "difference")
       )
     )
   })
   
-  output$debugModels <- renderUI({
-    req(ux_nb_models(input))
-    tagList(
-      lapply(
-        seq_len(ux_nb_models(input)),
-        function(x) {
-          renderPrint(ux_model(
-            input = input,
-            values = values,
-            model_number = x
-          ))
-        })
-    )
+  output$plotDSA <- renderPlot({
+    req(values$nDeterministic > 0)
+    req(values$model)
+    
+    values$dsa <- ux_run_dsa(input, values)
+    plot(values$dsa,
+         result = input$dsaPlotResult,
+         type = input$dsaPlotType)
   })
-  
-  output$debugRunModels <- renderPrint({
-    ux_run_models_raw(input, values)
-  })
-  
   
   ### prepare_timedep has a big problem with reactivity : there are 2 renderUI imbricated inside 1 renderUI. 
   ### When one of the renderUI is updated, all the others are invalidated. 

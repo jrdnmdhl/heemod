@@ -56,97 +56,37 @@ ux_state_names <- function(input) {
 }
 
 ux_parse_equation <- function(x, input) {
-  browser()
   stats::setNames(
-    shiny_subset(input, paste0("equationValue", seq_len(x))),
-    unlist(shiny_subset(input, paste0("equationName", seq_len(x))))
+    shiny_subset(input, paste0("equationValue", seq_len(x)-1)),
+    unlist(shiny_subset(input, paste0("equationName", seq_len(x)-1)))
   )
 }
 
 ux_parameters <- function(input, values) {
   
   info_param <- ux_nb_parameters(values)
-  ux_parse_equation(info_param$nEquation, input)
+  
+  if (info_param$nEquation > 0) {
+    list_equation <- ux_parse_equation(info_param$nEquation, input)
+  } else {
+    list_equation <- NULL
+  }
   
   trim <- function(x) gsub("^\\s+|\\s+$", "", x)
   
-  names_parameters <- unlist(
-    shiny_subset(
-      input,
-      paste0("globalParamName", seq_param)
-    )
-  ) %>%
-    trim()
-  
-  values_parameters <- unlist(
-    shiny_subset(
-      input,
-      paste0("globalParamValue", model_number, seq_param)
-    )
+  list_param <- c(
+    list_equation
   )
   
-  param_ok <- names_parameters != "" &
-    values_parameters != ""
-  
-  names_parameters <- names_parameters[param_ok]
-  values_parameters <- values_parameters[param_ok]
-  
-  test <- function(x) {
-    if (is.null(x)) {
-      FALSE
-    } else if (all(x == "")) {
-      FALSE
-    } else {
-      TRUE
-    }
-  }
-  
-  res <- if (test(values_parameters) & ux_use_morta(input)) {
-    names(values_parameters) <- names_parameters
-    
-    param_dots <- lazyeval::as.lazy_dots(values_parameters)
-    
-    param_dots <- c(
-      lazyeval::lazy_dots(
-        mortality_rate = rgho::get_who_mr(
-          age = ux_morta_age(input) + markov_cycle,
-          sex = ux_morta_sex(input),
-          country = ux_morta_country(input)
-        )
-      ),
-      param_dots
-    )
+  if (length(list_param)) {
+    names(list_param) <- trim(names(list_param))
     
     heemod::define_parameters_(
-      param_dots
+      lazyeval::as.lazy_dots(list_param)
     )
-  } else if (! test(values_parameters) & ux_use_morta(input)) {
-    param_dots <- lazyeval::lazy_dots(
-      mortality_rate = get_who_mr(
-        age = ux_morta_age(input) + markov_cycle,
-        sex = ux_morta_sex(input),
-        country = ux_morta_country(input)
-      )
-    )
-    
-    heemod::define_parameters_(
-      param_dots
-    )
-    
-  } else if (test(values_parameters)) {
-    names(values_parameters) <- names_parameters
-    
-    param_dots <- lazyeval::as.lazy_dots(values_parameters)
-    
-    heemod::define_parameters_(
-      param_dots
-    )
-    
   } else {
     heemod::define_parameters()
   }
-  
-  res
 }
 
 ux_use_morta <- function(input) {
@@ -298,7 +238,7 @@ ux_run_models_raw <- function(input, values) {
       )
   )
   names(list_models) <- ux_model_names(input)
-  browser()
+  
   heemod::run_model_(
     parameters = ux_parameters(
       input = input,
@@ -311,8 +251,8 @@ ux_run_models_raw <- function(input, values) {
     cost = ux_cost(input),
     effect = ux_effect(input),
     state_cycle_limit = NULL,
-    central_strategy = ux_base_model(input),
-    inflow = rep(0, length(init))
+    central_strategy = NULL,
+    inflow = rep(0, length(ux_init(input)))
   )
 }
 
@@ -327,4 +267,34 @@ ux_run_models <- function(input, values) {
   } else {
     res
   }
+}
+
+ux_run_dsa <- function(input, values) {
+  
+  n <- unlist(shiny_subset(
+    input,
+    paste0("DSAGlobalParamName", seq_len(values$nDeterministic)-1)
+  ))
+  
+  low <- stats::setNames(
+    shiny_subset(
+      input,
+      paste0("minDSAValue", seq_len(values$nDeterministic)-1)
+    ),
+    n)
+  
+  high <- stats::setNames(
+    shiny_subset(
+      input,
+      paste0("maxDSAValue", seq_len(values$nDeterministic)-1)
+    ),
+    n)
+  
+  heemod::run_dsa(
+    model = values$model,
+    dsa = heemod::define_dsa_(
+      par_names = n,
+      low_dots = lazyeval::as.lazy_dots(low),
+      high_dots = lazyeval::as.lazy_dots(high)
+    ))
 }

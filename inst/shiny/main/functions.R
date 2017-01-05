@@ -51,26 +51,26 @@ show_DSA_div <- function(input, values, choices, n){
 
 
 get_names_SA <- function(input, values){
-  equation <- map(seq_len(values$nEquation)-1, function(i){
+  equation <- purrr::map(seq_len(values$nEquation)-1, function(i){
     input[[paste0("equationName", i)]]
   }) 
-  rgho <- map(seq_len(values$nRgho)-1, function(i){
+  rgho <- purrr::map(seq_len(values$nRgho)-1, function(i){
     input[[paste0("rghoName", i)]]
   }) 
-  survival <- map(seq_len(values$nSurvival)-1, function(i){
+  survival <- purrr::map(seq_len(values$nSurvival)-1, function(i){
     c(
-      if(!is.null(input[[paste0("survivalName", i)]]))paste(input[[paste0("survivalName", i)]], "lambda"),
+      if(!is.null(input[[paste0("survivalName", i)]])) paste(input[[paste0("survivalName", i)]], "lambda"),
       if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
     )
   })
-  timedep <- map(0:(values$nTimedep-1), function(i){
+  timedep <- purrr::map(0:(values$nTimedep-1), function(i){
     if (!is.null(input[[paste0("timedepType", i)]])){
       if (input[[paste0("timedepType", i)]] == "constant") {
         input[[paste0("timedepName", i)]]
       }
       else {
         if(!is.null(values[[paste0("nTimedepNC", i)]])){
-          map(0:values[[paste0("nTimedepNC", i)]], function(j){
+          map::map(0:values[[paste0("nTimedepNC", i)]], function(j){
             sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
           }) %>% compact %>% flatten_chr
         }
@@ -80,9 +80,9 @@ get_names_SA <- function(input, values){
   })
   return(
     c(equation, rgho, survival, timedep) %>% 
-      compact %>%
-      flatten_chr %>% 
-      sort
+      purrr::compact() %>%
+      purrr::flatten_chr() %>% 
+      sort()
     )
 }
 

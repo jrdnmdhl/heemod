@@ -245,7 +245,11 @@ function(request) {
         shinydashboard::tabItem(
           tabName = "tab_dsa",
           fluidRow(
-            uiOutput("DSA") 
+            uiOutput("DSA"),
+            uiOutput("outDSA"),
+            tags$br(),
+            plotOutput("plotDSA"),
+            tags$br()
           )
         ),
         shinydashboard::tabItem(
@@ -300,8 +304,12 @@ function(request) {
               DT::dataTableOutput("tableResults"),
               uiOutput("titleICER"),
               DT::dataTableOutput("tableICER"),
+              tags$br(),
+              plotOutput("plotCE"),
               uiOutput("outCounts"),
-              plotOutput("plotCounts")
+              plotOutput("plotCounts"),
+              uiOutput("outValues"),
+              plotOutput("plotValues")
             )
           )
         ),
