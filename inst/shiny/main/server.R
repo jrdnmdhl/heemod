@@ -327,7 +327,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$addMultinomial <- renderUI({
-    req(values$nProbabilistic > 0)
+    #req(values$nProbabilistic > 0)
     isolate(choices <- get_names_SA(input, values))
     lapply(0:values$nProbabilistic, function(i){
       req(input[[paste0("PSADistrib", i)]])

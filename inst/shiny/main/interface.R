@@ -21,7 +21,12 @@ ux_model_names <- function(input) {
 }
 
 ux_nb_parameters <- function(values) {
-  values$nGlobalParameters
+  list(
+    nRgho = values$nRgho,
+    nEquation = values$nEquation,
+    nSurvival = values$nSurvival,
+    nTimedep = values$nTimedep
+  )
 }
 
 ux_nb_states <- function(input) {
@@ -50,8 +55,18 @@ ux_state_names <- function(input) {
   )
 }
 
+ux_parse_equation <- function(x) {
+  browser()
+  stats::setNames(
+    shiny_subset(input, paste0("equationValue", seq_len(x))),
+    unlist(shiny_subset(input, paste0("equationName", seq_len(x))))
+  )
+}
+
 ux_parameters <- function(input, values) {
-  seq_param <- seq_len(ux_nb_parameters(values))
+  
+  info_param <- ux_nb_parameters(values)
+  ux_parse_equation(info_param$nEquation)
   
   trim <- function(x) gsub("^\\s+|\\s+$", "", x)
   
