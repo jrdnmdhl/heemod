@@ -341,19 +341,19 @@ shinyServer(function(input, output, session) {
               4,
               if (j == 1) {
                 textInput(
-                  paste0("PSAMultinomName", i, j),
+                  paste_("PSAMultinomName", i, j),
                   label = "Parameter",
-                  value = input[[paste0("PSAGlobalParamName", i)]]) %>%
+                  value = input[[paste_("PSAGlobalParamName", i)]]) %>%
                   shinyjs::disabled()
               }
               else {
                 selectInput(
-                  paste0("PSAMultinomName", i, j),
+                  paste_("PSAMultinomName", i, j),
                   label = "Parameter",
                   choices = choices,
                   selected = ifelse(
-                    ! is.null(input[[paste0("PSAMultinomName", i, j)]]),
-                    input[[paste0("PSAMultinomName", i, j)]],
+                    !is.null(input[[paste_("PSAMultinomName", i, j)]]),
+                    input[[paste_("PSAMultinomName", i, j)]],
                     ""))
                 }
             ),
@@ -596,9 +596,9 @@ shinyServer(function(input, output, session) {
                        renderUI({
                          lapply(0:values[[paste0("nTimedepNC", n)]], function(i){
                            fluidRow(
-                             column(4, textInput(paste0("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], "")))),
-                             column(4, numericInput(paste0("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]],"")))),
-                             column(4, numericInput(paste0("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], ""))))
+                             column(4, textInput(paste_("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], "")))),
+                             column(4, numericInput(paste_("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]],"")))),
+                             column(4, numericInput(paste_("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], ""))))
                            )
                          })
                        })

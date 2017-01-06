@@ -1,3 +1,7 @@
+paste_ <- function(...){
+  paste(..., sep = "_")
+}
+
 show_PSA_div <- function(input, values, choices, n){
   if (!is.null(input[[paste0("PSADistrib", n)]])){
     psa_param1 <- switch (input[[paste0("PSADistrib", n)]],
@@ -71,7 +75,7 @@ get_names_SA <- function(input, values){
       else {
         if(!is.null(values[[paste0("nTimedepNC", i)]])){
           map::map(0:values[[paste0("nTimedepNC", i)]], function(j){
-            sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste0("timedepStart", i, j)]], input[[paste0("timedepEnd", i, j)]])
+            sprintf("%s (%s-%s)", input[[paste_("timedepName", i)]], input[[paste_("timedepStart", i, j)]], input[[paste_("timedepEnd", i, j)]])
           }) %>% compact %>% flatten_chr
         }
       }
