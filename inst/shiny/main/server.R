@@ -3,6 +3,7 @@ shinyServer(function(input, output, session) {
                            nTimedep = 0, nDeterministic = 0, nProbabilistic = 0, moduleEdit = FALSE)
   local_values <- reactiveValues(restoring = 0, restoring_time = Sys.time(), show_masker = FALSE)
   
+  observe(print(input$equationName0))
   onBookmark(function(state) {
     nameValues <- names(reactiveValuesToList(values))
     walk(nameValues, function(x){
@@ -287,7 +288,10 @@ shinyServer(function(input, output, session) {
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     lapply(0:values$nDeterministic, function(i){
-      show_DSA_div(input, values, choices, i)
+      if (i > 0)
+        rem_choices <- choices[-which(choices %in% purrr::map_chr(paste0("DSAGlobalParamName", 0:(i - 1)), ~ input[[.]]))]
+      else rem_choices <- choices
+      show_DSA_div(input, values, rem_choices, i)
     })
   })
   
@@ -319,7 +323,10 @@ shinyServer(function(input, output, session) {
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     lapply(0:values$nProbabilistic, function(i){
-      show_PSA_div(input, values, choices, i)
+      if (i > 0)
+        rem_choices <- choices[-which(choices %in% purrr::map_chr(paste0("DSAGlobalParamName", 0:(i - 1)), ~ input[[.]]))]
+      else rem_choices <- choices
+      show_PSA_div(input, values, rem_choices, i)
     })
   })
   

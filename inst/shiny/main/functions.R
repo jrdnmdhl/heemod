@@ -74,7 +74,7 @@ get_names_SA <- function(input, values){
       }
       else {
         if(!is.null(values[[paste0("nTimedepNC", i)]])){
-          map::map(0:values[[paste0("nTimedepNC", i)]], function(j){
+          purrr::map(0:values[[paste0("nTimedepNC", i)]], function(j){
             sprintf("%s (%s-%s)", input[[paste_("timedepName", i)]], input[[paste_("timedepStart", i, j)]], input[[paste_("timedepEnd", i, j)]])
           }) %>% compact %>% flatten_chr
         }
