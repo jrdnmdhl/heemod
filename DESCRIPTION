@@ -32,6 +32,7 @@ LazyData: true
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1
 Suggests: diagram,
+          flexsurv,
           Hmisc,
           knitr,
           logitnorm,
@@ -42,6 +43,7 @@ Suggests: diagram,
           readxl,
           rmarkdown,
           shinydashboard,
+          survival,
           testthat
 URL: https://github.com/pierucci/heemod, https://pierucci.org
 BugReports: https://github.com/pierucci/heemod/issues
