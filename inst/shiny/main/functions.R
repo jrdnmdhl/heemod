@@ -2,53 +2,17 @@ paste_ <- function(...){
   paste(..., sep = "_")
 }
 
-show_PSA_div <- function(input, values, choices, n){
-  if (!is.null(input[[paste0("PSADistrib", n)]])){
-    psa_param1 <- switch (input[[paste0("PSADistrib", n)]],
-                          "Normal" = "Mean",
-                          "Lognormal" = "Mean",
-                          "Binomial" = "Prop",
-                          "Gamma" = "Mean",
-                          "Logitnormal" = "Mu",
-                          "Multinomial" = "Nb parameters"
-                          ) 
-    psa_param2 <- switch (input[[paste0("PSADistrib", n)]],
-                          "Normal" = "SD",
-                          "Lognormal" = "SD",
-                          "Binomial" = "Size",
-                          "Gamma" = "SD",
-                          "Logitnormal" = "Sigma"
-    ) 
-  }
-  fluidRow(id = paste0("PSA_div", n),
-      column(2, selectizeInput(paste0("PSAGlobalParamName", n), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", n)]]), input[[paste0("PSAGlobalParamName", n)]], ""))),
-      column(2, selectizeInput(paste0("PSADistrib", n), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", n)]]), input[[paste0("PSADistrib", n)]], character(0)))),
-      if (!is.null(input[[paste0("PSADistrib", n)]]) && length(input[[paste0("PSADistrib", n)]]) > 0){
-        isolate(
-        tagList(
-          column(2, numericInput(paste0("PSAParam1", n), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", n)]]), input[[paste0("PSAParam1", n)]], ""))),
-          if (input[[paste0("PSADistrib", n)]] != "Multinomial"){
-            column(2, numericInput(paste0("PSAParam2", n), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", n)]]), input[[paste0("PSAParam2", n)]], "")))
-          } else column(6, uiOutput("addMultinomial"))
-        )
-        )
-      },
-      if (!is.null(input[[paste0("PSADistrib", n)]]) && input[[paste0("PSADistrib", n)]] == "Lognormal"){
-        column(4, style = "margin-top:20px", checkboxInput(paste0("PSALogscale", n), "Check if mean and sd are on the log scale", value = ifelse(!is.null(input[[paste0("PSALogscale", n)]]), input[[paste0("PSALogscale", n)]], FALSE)))
-      }
-  )
-}
-
 show_DSA_div <- function(input, values, choices, n){
   var_name <- if (n == 0) "Variable name" else NULL
   max_val <- if (n == 0) "Minimum value" else NULL
   min_val <- if (n == 0) "Maximum value" else NULL
+  style_trash <- if(n == 0) "margin-top:25px" else NULL
   isolate({
-    print(choices)
     div(id = paste0("DSA_div", n), class="centerdiv",
         selectizeInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
         numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
-        numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], ""))
+        numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], "")),
+        actionLink(paste0("deleteDSA", n), label = NULL, icon = icon("trash-o", class = "fa-2x"), style = style_trash)
     )
   })
 }
@@ -264,7 +228,7 @@ searchRegion <- function(n, input){
 
 searchCountry <- function(n, input){
   req(input[[paste0("rghoRegion", n)]])
-  countryCodes <- filter_gho(
+  countryCodes <- rgho::filter_gho(
     COUNTRY,
     WHO_REGION_CODE == input[[paste0("rghoRegion", n)]]
   )
