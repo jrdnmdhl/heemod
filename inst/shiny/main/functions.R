@@ -310,3 +310,142 @@ show_next <- function(val, trigger, input, values, FUN){
     FUN(input$nbStrategies, input, values, click = FALSE)
   }
 }
+
+### prepare_timedep has a problem with reactivity : there are 2 renderUI imbricated inside 1 renderUI. 
+### When one of the renderUI is updated, all the others are invalidated. 
+
+prepare_timedep <- function(n, edit, input, values) {
+  table_body <- tagList(
+    column(2, textInput(paste0("timedepName", n), NULL, ifelse(!is.null(input[[paste0("timedepName", n)]]), input[[paste0("timedepName", n)]], ""))),
+    column(2, selectInput(paste0("timedepType", n), NULL, choices = c("Constant variation with the number of cycles" = "constant", "Non-constant variation with the number of cycles" = "nonConstant"), selected = ifelse(!is.null(input[[paste0("timedepType", n)]]), input[[paste0("timedepType", n)]], character(0)))),
+    column(8, renderUI({
+      fluidRow(
+        if (!is.null(input[[paste0("timedepType", n)]])){
+          if (input[[paste0("timedepType", n)]] == "constant"){
+            column(9,
+                   renderUI({
+                     fluidRow(
+                       column(4, textInput(paste0("timedepValueC", n), NULL,  isolate(ifelse(!is.null(input[[paste0("timedepValueC", n)]]), input[[paste0("timedepValueC", n)]],""))))
+                     )
+                   })
+            )
+          } else {
+            if (is.null(values[[paste0("nTimedepNC", n)]])) {
+              values[[paste0("nTimedepNC", n)]] <- 0
+            }
+            tagList(
+              column(9, 
+                     renderUI({
+                       lapply(0:values[[paste0("nTimedepNC", n)]], function(i){
+                         fluidRow(
+                           column(4, textInput(paste_("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], "")))),
+                           column(4, numericInput(paste_("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]],"")))),
+                           column(4, numericInput(paste_("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], ""))))
+                         )
+                       })
+                     })
+                     
+              ),
+              column(2, actionButton(paste0("timedepNew", n), icon("plus")))
+            )
+          }
+        }
+      )
+    })
+    )
+  ) 
+  table_title <- tagList(
+    column(2, strong("Name")),
+    column(2, strong("Type of time-dependent variable")),
+    column(8, renderUI({
+      fluidRow(
+        if (!is.null(input[[paste0("timedepType", n)]])){
+          if (input[[paste0("timedepType", n)]] == "constant"){
+            column(9,
+                   fluidRow(
+                     column(4, strong("Value"))
+                   )
+            )
+          } else {
+            tagList(
+              column(9, 
+                     fluidRow(
+                       column(4, strong("Value")),
+                       column(4, strong("Cycle Start")),
+                       column(4, strong("Cycle End"))
+                     )
+              )
+            )
+          }
+          
+        }
+      )
+    }))
+  )
+  return(list(title = table_title, body = table_body))
+}
+prepare_rgho <- function(n, edit, input, values) {
+  table_body <- tagList(
+    isolate(column(2, textInput(paste0("rghoName", n), NULL, ifelse(!is.null(input[[paste0("rghoName", n)]]), input[[paste0("rghoName", n)]], "")))),
+    isolate(column(2, textInput(paste0("rghoStartAge", n), NULL, ifelse(!is.null(input[[paste0("rghoStartAge", n)]]), input[[paste0("rghoStartAge", n)]], "")))),
+    isolate(column(2, selectInput(paste0("rghoGender", n), NULL, choices = c(Female = "FMLE", Male = "MLE"), selected = input[[paste0("rghoGender", n)]]))),
+    column(2, searchRegion(n, input)),
+    column(2, renderUI({
+      searchCountry(n, input)
+    }))
+  )
+  table_title <- tagList(
+    column(2, strong("Name")),
+    column(2, strong("Age at beginning")),
+    column(2, strong("Gender")),
+    column(2, strong("Region")),
+    column(2, strong("Country"))
+  )
+  return(list(title = table_title, body = table_body))
+}
+
+prepare_equation <- function(n, edit, input, values) {
+  table_title <- tagList(
+    column(2, strong("Name")),
+    column(2, strong("Value"))
+  )
+  table_body <- tagList(
+    column(2, textInput(paste0("equationName", n), NULL, ifelse(!is.null(input[[paste0("equationName", n)]]), input[[paste0("equationName", n)]], ""))),
+    column(2, textInput(paste0("equationValue", n), NULL, ifelse(!is.null(input[[paste0("equationValue", n)]]), input[[paste0("equationValue", n)]], "")))
+  )
+  return(list(title = table_title, body = table_body))
+}
+
+prepare_survival <- function(n, edit, input, values) {
+  table_body <- tagList(
+    column(12,
+           renderUI({
+             fluidRow(
+               column(2, textInput(paste0("survivalName", n), NULL, ifelse(!is.null(input[[paste0("survivalName", n)]]), input[[paste0("survivalName", n)]], ""))),
+               column(2, selectInput(paste0("survivalDistribution", n), NULL, choices = c("Exponential", "Weibull"), selected = ifelse (!is.null(input[[paste0("survivalDistribution", n)]]), input[[paste0("survivalDistribution", n)]], ""))),
+               column(2, numericInput(paste0("survivalLambda", n), NULL, 
+                                      isolate(ifelse(!is.null(input[[paste0("survivalLambda", n)]]), input[[paste0("survivalLambda", n)]], "")))),
+               column(2, 
+                      if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
+                        isolate(numericInput(paste0("survivalK", n), NULL, ifelse(!is.null(input[[paste0("survivalK", n)]]), input[[paste0("survivalK", n)]],"")))
+                      }
+               ))
+           })
+    )
+  )
+  table_title <- tagList(
+    column(12, 
+           fluidRow(
+             column(2, strong("Name")), 
+             column(2, strong("Distribution")), 
+             column(2, strong("Lambda")),
+             column(2, renderUI({
+               if (!is.null(input[[paste0("survivalDistribution", n)]]) && input[[paste0("survivalDistribution", n)]] == "Weibull"){
+                 strong("k")
+               }
+             }))
+           )
+    )
+  )
+  return(list(title = table_title, body = table_body))
+}
