@@ -73,7 +73,9 @@ shinyServer(function(input, output, session) {
                 local_values$removePSA <- n
               } 
             }
-          } 
+          } else {
+            local_values$removePSA <- values$nProbabilistic
+          }
         }, once = TRUE, ignoreInit = TRUE)
     })
   })
@@ -88,6 +90,13 @@ shinyServer(function(input, output, session) {
                             "Gamma" = "Mean",
                             "Logitnormal" = "Mu",
                             "Multinomial" = "Nb parameters"
+      )
+      psa_param2 <- switch (input[[paste0("PSADistrib", values$nProbabilistic)]],
+                            "Normal" = "SD",
+                            "Lognormal" = "SD",
+                            "Binomial" = "Size",
+                            "Gamma" = "SD",
+                            "Logitnormal" = "Sigma"
       )
       choices <- get_names_SA(input, values)
       updateSelectizeInput(session, paste0("PSAGlobalParamName", values$nProbabilistic), "Variable name" , choices = choices, selected = character(0))
@@ -110,7 +119,7 @@ shinyServer(function(input, output, session) {
   observe({
     req(local_values$removePSA, local_values$all_updated)
     if (stringr::str_length(input[[paste0("PSAGlobalParamName", values$nProbabilistic)]]) == 0 & 
-        (input[[paste0("PSADistrib", values$nProbabilistic)]] != "Multinomial" | is.na(input[[paste_("PSAMultinomValue", values$nProbabilistic, 1)]]))){
+        (input[[paste0("PSADistrib", values$nProbabilistic)]] != "Multinomial" || is.na(input[[paste_("PSAMultinomValue", values$nProbabilistic, 1)]]))){
       local_values$old_param1 <- NULL
       local_values$removePSA <- NULL
       local_values$all_updated <- FALSE
@@ -479,7 +488,12 @@ shinyServer(function(input, output, session) {
                 tagList(
                   isolate(column(2, numericInput(paste0("PSAParam1", i), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", i)]]), input[[paste0("PSAParam1", i)]], NA)))),
                   if (isolate(input[[paste0("PSADistrib", i)]] != "Multinomial")){
-                    isolate(column(2, numericInput(paste0("PSAParam2", i), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", i)]]), input[[paste0("PSAParam2", i)]], NA))))
+                    tagList(
+                    isolate(column(2, numericInput(paste0("PSAParam2", i), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", i)]]), input[[paste0("PSAParam2", i)]], NA)))),
+                    if (isolate(input[[paste0("PSADistrib", i)]] == "Lognormal")){
+                      isolate(column(2, style = "margin-top:20px", checkboxInput(paste0("PSALogscale", i), "Check if mean and sd are on the log scale", value = ifelse(!is.null(input[[paste0("PSALogscale", i)]]), input[[paste0("PSALogscale", i)]], FALSE))))
+                    }
+                    )
                   } else {
                     if(!is.null(input[[paste0("PSAParam1", i)]]) && !is.na(input[[paste0("PSAParam1", i)]]) && input[[paste0("PSAParam1", i)]] > 0){
                     isolate({
