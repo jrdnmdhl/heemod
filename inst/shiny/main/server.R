@@ -282,10 +282,10 @@ shinyServer(function(input, output, session) {
   
   observe({
     n <- values$nDeterministic
-    shinyjs::toggleState("addDeterministic", 
-                         condition = n < length(get_names_SA(input, values)) - 1 & 
+    shinyjs::toggleState("addDeterministic",
+                         condition = n == 0 | (n < length(get_names_SA(input, values)) &
                            !is.null(input[[paste0("minDSAValue", n)]]) && !is.na(input[[paste0("minDSAValue", n)]]) &
-                           !is.null(input[[paste0("maxDSAValue", n)]]) && !is.na(input[[paste0("maxDSAValue", n)]]))
+                           !is.null(input[[paste0("maxDSAValue", n)]]) && !is.na(input[[paste0("maxDSAValue", n)]])))
   })
   
   observeEvent(input$addDeterministic, {
@@ -294,18 +294,17 @@ shinyServer(function(input, output, session) {
   
   output$DSAtable <- renderUI({
     req(sum(c(values$nEquation, values$nRgho,
-              values$nSurvival, values$nTimedep)) > 0)
+              values$nSurvival, values$nTimedep)) > 0, values$nDeterministic > 0)
     choices <- get_names_SA(input, values)
-    req(length(choices) > 0)
-    lapply(seq.int(0, values$nDeterministic), function(i){
-      if (i > 0){
-        old_choices <- purrr::map(paste0("DSAGlobalParamName", seq.int(0, i - 1)), ~ input[[.]])
+    lapply(seq.int(1, values$nDeterministic), function(i){
+      if (i > 1){
+        old_choices <- purrr::map(paste0("DSAGlobalParamName", seq.int(1, i - 1)), ~ input[[.]])
         rem_choices <- choices[-which(choices %in% old_choices)]
       } else  rem_choices <- choices
-      var_name <- if (i == 0) "Variable name" else NULL
-      max_val <- if (i == 0) "Minimum value" else NULL
-      min_val <- if (i == 0) "Maximum value" else NULL
-      style_trash <- if(i == 0) "margin-top:25px" else NULL
+      var_name <- if (i == 1) "Variable name" else NULL
+      max_val <- if (i == 1) "Minimum value" else NULL
+      min_val <- if (i == 1) "Maximum value" else NULL
+      style_trash <- if(i == 1) "margin-top:25px" else NULL
       isolate({
         div(id = paste0("DSA_div", i), class="centerdiv",
             selectizeInput(paste0("DSAGlobalParamName", i), var_name, choices = rem_choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", i)]]), input[[paste0("DSAGlobalParamName", i)]], "")),
@@ -318,22 +317,22 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    lapply(seq.int(0, values$nDeterministic), function(n){
+    lapply(seq.int(1, values$nDeterministic), function(n){
       observeEvent(input[[paste0("deleteDSA", n)]], {
         choices <- get_names_SA(input, values)
         if (n < values$nDeterministic){
-          for(i in seq.int(n, (values$nDeterministic - 1))){
-            var_name <- if (i == 0) "Variable name" else NULL
-            max_val <- if (i == 0) "Minimum value" else NULL
-            min_val <- if (i == 0) "Maximum value" else NULL
+          for(i in seq.int(n, values$nDeterministic)){
+            var_name <- if (i == 1) "Variable name" else NULL
+            max_val <- if (i == 1) "Minimum value" else NULL
+            min_val <- if (i == 1) "Maximum value" else NULL
             updateSelectizeInput(session, paste0("DSAGlobalParamName", i), var_name, choices = choices, selected = input[[paste0("DSAGlobalParamName", i + 1)]])
             updateNumericInput(session, paste0("minDSAValue", i), max_val, input[[paste0("minDSAValue", i + 1)]])
             updateNumericInput(session, paste0("maxDSAValue", i), min_val, input[[paste0("maxDSAValue", i + 1)]])
           }
         } else{
-          var_name <- if (n == 0) "Variable name" else NULL
-          max_val <- if (n == 0) "Minimum value" else NULL
-          min_val <- if (n == 0) "Maximum value" else NULL
+          var_name <- if (n == 1) "Variable name" else NULL
+          max_val <- if (n == 1) "Minimum value" else NULL
+          min_val <- if (n == 1) "Maximum value" else NULL
         }
         updateNumericInput(session, paste0("minDSAValue", values$nDeterministic), label = max_val, value = NA)
         updateNumericInput(session, paste0("maxDSAValue", values$nDeterministic ), label = min_val, value = NA)
@@ -377,14 +376,14 @@ shinyServer(function(input, output, session) {
   
   output$PSAtable <- renderUI({
     req(sum(c(values$nEquation, values$nRgho,
-              values$nSurvival, values$nTimedep)) > 0)
+              values$nSurvival, values$nTimedep)) > 0, values$nProbabilistic > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
     
     #req(values$nProbabilistic > 0)
-    lapply(seq.int(0, values$nProbabilistic), function(i){
-      if (i > 0){
-        old_choices <- purrr::map(paste0("PSAGlobalParamName", seq.int(0, i - 1)), ~ input[[.]])
+    lapply(seq.int(1, values$nProbabilistic), function(i){
+      if (i > 1){
+        old_choices <- purrr::map(paste0("PSAGlobalParamName", seq.int(1, i - 1)), ~ input[[.]])
         rem_choices <- choices[-which(choices %in% old_choices)]
       } else rem_choices <- choices
       tagList(
@@ -484,18 +483,17 @@ shinyServer(function(input, output, session) {
   observe({
     n <- values$nProbabilistic
     shinyjs::toggleState("addProbabilistic", 
-                         condition = n < length(get_names_SA(input, values)) - 1 & 
-                           !is.null(input[[paste0("PSAParam1", n)]]) && !is.na(input[[paste0("PSAParam1", n)]]))
+                         condition =  n == 0 | (n < length(get_names_SA(input, values)) & 
+                           !is.null(input[[paste0("PSAParam1", n)]]) && !is.na(input[[paste0("PSAParam1", n)]])))
   })
   
   observeEvent(input$addProbabilistic, {
     values$nProbabilistic <- values$nProbabilistic + 1
-    
   })
   
   
   observe({
-    lapply(seq.int(0, values$nProbabilistic), function(n){
+    lapply(seq.int(1, values$nProbabilistic), function(n){
       observeEvent(input[[paste0("deletePSA", n)]], {
         choices <- get_names_SA(input, values)
         if (n < values$nProbabilistic){
@@ -802,12 +800,7 @@ shinyServer(function(input, output, session) {
       })
     }, quoted = TRUE)
   }
-  
-  
-  observe({
-    print(input$equationName0)
-  })
-  
+
   output$globalParameters <- renderUI({
     tagList(
       fluidRow(
