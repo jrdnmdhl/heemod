@@ -3,129 +3,7 @@ shinyServer(function(input, output, session) {
                            nTimedep = 0, nDeterministic = 0, nProbabilistic = 0, moduleEdit = FALSE,
                            removeDSA = FALSE, removePSA = FALSE)
   local_values <- reactiveValues(restoring = 0, restoring_time = Sys.time(), show_masker = FALSE, all_updated = FALSE)
-  
-  observe({
-    lapply(0:values$nDeterministic, function(n){
-        observeEvent(input[[paste0("deleteDSA", n)]], {
-          choices <- get_names_SA(input, values)
-          if (n < values$nDeterministic){
-            for(i in n:(values$nDeterministic - 1)){
-              var_name <- if (i == 0) "Variable name" else NULL
-              max_val <- if (i == 0) "Minimum value" else NULL
-              min_val <- if (i == 0) "Maximum value" else NULL
-              updateSelectizeInput(session, paste0("DSAGlobalParamName", i), var_name, choices = choices, selected = input[[paste0("DSAGlobalParamName", i + 1)]])
-              updateNumericInput(session, paste0("minDSAValue", i), max_val, input[[paste0("minDSAValue", i + 1)]])
-              updateNumericInput(session, paste0("maxDSAValue", i), min_val, input[[paste0("maxDSAValue", i + 1)]])
-            }
-          } else{
-            var_name <- if (n == 0) "Variable name" else NULL
-            max_val <- if (n == 0) "Minimum value" else NULL
-            min_val <- if (n == 0) "Maximum value" else NULL
-          }
-          updateNumericInput(session, paste0("minDSAValue", values$nDeterministic), label = max_val, value = NA)
-          updateNumericInput(session, paste0("maxDSAValue", values$nDeterministic ), label = min_val, value = NA)
-          values$removeDSA <- TRUE
 
-        }, once = TRUE, ignoreInit = TRUE)
-    })
-  })
-  
-
-  observe({ ### Workaround to allow enough time to updateNumericInput to reset
-    if (values$removeDSA == TRUE){
-      req(is.na(input[[paste0("minDSAValue", values$nDeterministic)]]), is.na(input[[paste0("maxDSAValue", values$nDeterministic)]]))
-      values$removeDSA <- FALSE
-      isolate(values$nDeterministic <- values$nDeterministic - 1)
-    }
-  })
-  
-  
-  observe({
-    lapply(0:values$nProbabilistic, function(n){
-         observeEvent(input[[paste0("deletePSA", n)]], {
-          choices <- get_names_SA(input, values)
-          if (n < values$nProbabilistic){
-            local_values$old_param1 <- input[[paste0("PSAGlobalParamName", n + 1)]]
-            for(i in n:(values$nProbabilistic - 1)){
-              psa_param1 <- switch (input[[paste0("PSADistrib", i)]],
-                                    "Normal" = "Mean",
-                                    "Lognormal" = "Mean",
-                                    "Binomial" = "Prop",
-                                    "Gamma" = "Mean",
-                                    "Logitnormal" = "Mu",
-                                    "Multinomial" = "Nb parameters"
-              ) 
-              psa_param2 <- switch (input[[paste0("PSADistrib", i)]],
-                                    "Normal" = "SD",
-                                    "Lognormal" = "SD",
-                                    "Binomial" = "Size",
-                                    "Gamma" = "SD",
-                                    "Logitnormal" = "Sigma"
-              )
-              updateSelectizeInput(session, paste0("PSAGlobalParamName", i), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", i + 1)]]), input[[paste0("PSAGlobalParamName", i + 1)]], ""))
-              updateSelectizeInput(session, paste0("PSADistrib", i), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", i + 1)]]), input[[paste0("PSADistrib", i + 1)]], character(0)))
-              updateNumericInput(session, paste0("PSAParam1", i), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", i + 1)]]), input[[paste0("PSAParam1", i + 1)]], NA))
-              if (input[[paste0("PSADistrib", i)]] != "Multinomial" & input[[paste0("PSADistrib", i + 1)]] != "Multinomial"){
-                updateNumericInput(session, paste0("PSAParam2", i), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", i + 1)]]), input[[paste0("PSAParam2", i + 1)]], NA))
-                local_values$removePSA <- n
-              } else if (input[[paste0("PSADistrib", i + 1)]] == "Multinomial") {
-                local_values$other_to_multinom <- i
-                local_values$removePSA <- n
-              } 
-            }
-          } else {
-            local_values$removePSA <- values$nProbabilistic
-          }
-        }, once = TRUE, ignoreInit = TRUE)
-    })
-  })
-  
-  observe({
-    req(local_values$removePSA)
-    if (is.null(local_values$other_to_multinom)){
-      psa_param1 <- switch (input[[paste0("PSADistrib", values$nProbabilistic)]],
-                            "Normal" = "Mean",
-                            "Lognormal" = "Mean",
-                            "Binomial" = "Prop",
-                            "Gamma" = "Mean",
-                            "Logitnormal" = "Mu",
-                            "Multinomial" = "Nb parameters"
-      )
-      psa_param2 <- switch (input[[paste0("PSADistrib", values$nProbabilistic)]],
-                            "Normal" = "SD",
-                            "Lognormal" = "SD",
-                            "Binomial" = "Size",
-                            "Gamma" = "SD",
-                            "Logitnormal" = "Sigma"
-      )
-      choices <- get_names_SA(input, values)
-      updateSelectizeInput(session, paste0("PSAGlobalParamName", values$nProbabilistic), "Variable name" , choices = choices, selected = character(0))
-      updateSelectizeInput(session, paste0("PSADistrib", values$nProbabilistic), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = character(0))
-      updateNumericInput(session, paste0("PSAParam1", values$nProbabilistic), psa_param1, NA)
-
-      
-      if (input[[paste0("PSADistrib", values$nProbabilistic)]] != "Multinomial"){
-        updateNumericInput(session, paste0("PSAParam2", values$nProbabilistic), psa_param2, NA)
-      } else {
-        for (i in seq_len(input[[paste0("PSAParam1", values$nProbabilistic)]])){
-          updateTextInput(session, paste_("PSAMultinomName", values$nProbabilistic,i), psa_param1, "")
-          updateNumericInput(session, paste_("PSAMultinomValue", values$nProbabilistic,i), psa_param1, NA)
-        }
-      }
-      local_values$all_updated <- TRUE
-    }
-  })
-
-  observe({
-    req(local_values$removePSA, local_values$all_updated)
-    if (stringr::str_length(input[[paste0("PSAGlobalParamName", values$nProbabilistic)]]) == 0 & 
-        (input[[paste0("PSADistrib", values$nProbabilistic)]] != "Multinomial" || is.na(input[[paste_("PSAMultinomValue", values$nProbabilistic, 1)]]))){
-      local_values$old_param1 <- NULL
-      local_values$removePSA <- NULL
-      local_values$all_updated <- FALSE
-      isolate(values$nProbabilistic <- values$nProbabilistic - 1)
-    }
-  })
 
   
   onBookmark(function(state) {
@@ -239,7 +117,7 @@ shinyServer(function(input, output, session) {
   observe_timedepNew <- list()
   
   observe_nTimedep <- observe({
-    lapply(0:values$nTimedep, function(n){
+    lapply(seq.int(0, values$nTimedep), function(n){
       isolate({
         if (purrr::map_lgl(observe_timedepNew[n + 1], is.null)){ #I would have prefered : if (is.null(observe_timedepNew[[n+1]]))
           observe_timedepNew[[n + 1]] <<- observeEvent(input[[paste0("timedepNew", n)]], {
@@ -419,17 +297,63 @@ shinyServer(function(input, output, session) {
               values$nSurvival, values$nTimedep)) > 0)
     choices <- get_names_SA(input, values)
     req(length(choices) > 0)
-    lapply(0:values$nDeterministic, function(i){
+    lapply(seq.int(0, values$nDeterministic), function(i){
       if (i > 0){
-        old_choices <- purrr::map(paste0("DSAGlobalParamName", 0:(i - 1)), ~ input[[.]]) #map_chr à changer +++++
-        #print(old_choices)
+        old_choices <- purrr::map(paste0("DSAGlobalParamName", seq.int(0, i - 1)), ~ input[[.]])
         rem_choices <- choices[-which(choices %in% old_choices)]
       } else  rem_choices <- choices
-      show_DSA_div(input, values, rem_choices, i)
+      var_name <- if (i == 0) "Variable name" else NULL
+      max_val <- if (i == 0) "Minimum value" else NULL
+      min_val <- if (i == 0) "Maximum value" else NULL
+      style_trash <- if(i == 0) "margin-top:25px" else NULL
+      isolate({
+        div(id = paste0("DSA_div", i), class="centerdiv",
+            selectizeInput(paste0("DSAGlobalParamName", i), var_name, choices = rem_choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", i)]]), input[[paste0("DSAGlobalParamName", i)]], "")),
+            numericInput(paste0("minDSAValue", i), max_val, ifelse(!is.null(input[[paste0("minDSAValue", i)]]), input[[paste0("minDSAValue", i)]], "")),
+            numericInput(paste0("maxDSAValue", i), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", i)]]), input[[paste0("maxDSAValue", i)]], "")),
+            actionLink(paste0("deleteDSA", i), label = NULL, icon = icon("trash-o", class = "fa-2x"), style = style_trash)
+        )
+      })
     })
   })
   
-  add_probabilistic <- NULL
+  observe({
+    lapply(seq.int(0, values$nDeterministic), function(n){
+      observeEvent(input[[paste0("deleteDSA", n)]], {
+        choices <- get_names_SA(input, values)
+        if (n < values$nDeterministic){
+          for(i in seq.int(n, (values$nDeterministic - 1))){
+            var_name <- if (i == 0) "Variable name" else NULL
+            max_val <- if (i == 0) "Minimum value" else NULL
+            min_val <- if (i == 0) "Maximum value" else NULL
+            updateSelectizeInput(session, paste0("DSAGlobalParamName", i), var_name, choices = choices, selected = input[[paste0("DSAGlobalParamName", i + 1)]])
+            updateNumericInput(session, paste0("minDSAValue", i), max_val, input[[paste0("minDSAValue", i + 1)]])
+            updateNumericInput(session, paste0("maxDSAValue", i), min_val, input[[paste0("maxDSAValue", i + 1)]])
+          }
+        } else{
+          var_name <- if (n == 0) "Variable name" else NULL
+          max_val <- if (n == 0) "Minimum value" else NULL
+          min_val <- if (n == 0) "Maximum value" else NULL
+        }
+        updateNumericInput(session, paste0("minDSAValue", values$nDeterministic), label = max_val, value = NA)
+        updateNumericInput(session, paste0("maxDSAValue", values$nDeterministic ), label = min_val, value = NA)
+        values$removeDSA <- TRUE
+        
+      }, once = TRUE, ignoreInit = TRUE)
+    })
+  })
+  
+  
+  observe({ ### Workaround to allow enough time for updateNumericInput to reset
+    if (values$removeDSA == TRUE){
+      req(is.na(input[[paste0("minDSAValue", values$nDeterministic)]]), is.na(input[[paste0("maxDSAValue", values$nDeterministic)]]))
+      values$removeDSA <- FALSE
+      isolate(
+        values$nDeterministic <- ifelse(values$nDeterministic > 0, values$nDeterministic - 1, 0)
+      )
+    }
+  })
+  
   
   output$PSA <- renderUI({
     req(sum(c(values$nEquation, values$nRgho, values$nSurvival, values$nTimedep)) > 0)
@@ -458,13 +382,13 @@ shinyServer(function(input, output, session) {
     req(length(choices) > 0)
     
     #req(values$nProbabilistic > 0)
-    lapply(0:values$nProbabilistic, function(i){
+    lapply(seq.int(0, values$nProbabilistic), function(i){
       if (i > 0){
-        old_choices <- purrr::map(paste0("PSAGlobalParamName", 0:(i - 1)), ~ input[[.]])
+        old_choices <- purrr::map(paste0("PSAGlobalParamName", seq.int(0, i - 1)), ~ input[[.]])
         rem_choices <- choices[-which(choices %in% old_choices)]
       } else rem_choices <- choices
       tagList(
-        column(2, selectizeInput(paste0("PSAGlobalParamName", i), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", i)]]), input[[paste0("PSAGlobalParamName", i)]], ""))),
+        column(2, selectizeInput(paste0("PSAGlobalParamName", i), "Variable name" , choices = rem_choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", i)]]), input[[paste0("PSAGlobalParamName", i)]], ""))),
         column(2, selectizeInput(paste0("PSADistrib", i), "Distribution", choices = c("", "Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", i)]]), input[[paste0("PSADistrib", i)]], character(0)))),
         renderUI({
           req(stringr::str_length(input[[paste0("PSADistrib", i)]]) > 1)
@@ -569,6 +493,95 @@ shinyServer(function(input, output, session) {
     
   })
   
+  
+  observe({
+    lapply(seq.int(0, values$nProbabilistic), function(n){
+      observeEvent(input[[paste0("deletePSA", n)]], {
+        choices <- get_names_SA(input, values)
+        if (n < values$nProbabilistic){
+          local_values$old_param1 <- input[[paste0("PSAGlobalParamName", n + 1)]]
+          for(i in seq.int(n, values$nProbabilistic - 1)){
+            psa_param1 <- switch (input[[paste0("PSADistrib", i)]],
+                                  "Normal" = "Mean",
+                                  "Lognormal" = "Mean",
+                                  "Binomial" = "Prop",
+                                  "Gamma" = "Mean",
+                                  "Logitnormal" = "Mu",
+                                  "Multinomial" = "Nb parameters"
+            ) 
+            psa_param2 <- switch (input[[paste0("PSADistrib", i)]],
+                                  "Normal" = "SD",
+                                  "Lognormal" = "SD",
+                                  "Binomial" = "Size",
+                                  "Gamma" = "SD",
+                                  "Logitnormal" = "Sigma"
+            )
+            updateSelectizeInput(session, paste0("PSAGlobalParamName", i), "Variable name" , choices = choices, selected = ifelse(!is.null(input[[paste0("PSAGlobalParamName", i + 1)]]), input[[paste0("PSAGlobalParamName", i + 1)]], ""))
+            updateSelectizeInput(session, paste0("PSADistrib", i), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = ifelse(!is.null(input[[paste0("PSADistrib", i + 1)]]), input[[paste0("PSADistrib", i + 1)]], character(0)))
+            updateNumericInput(session, paste0("PSAParam1", i), psa_param1, ifelse(!is.null(input[[paste0("PSAParam1", i + 1)]]), input[[paste0("PSAParam1", i + 1)]], NA))
+            if (input[[paste0("PSADistrib", i)]] != "Multinomial" & input[[paste0("PSADistrib", i + 1)]] != "Multinomial"){
+              updateNumericInput(session, paste0("PSAParam2", i), psa_param2, ifelse(!is.null(input[[paste0("PSAParam2", i + 1)]]), input[[paste0("PSAParam2", i + 1)]], NA))
+              local_values$removePSA <- n
+            } else if (input[[paste0("PSADistrib", i + 1)]] == "Multinomial") {
+              local_values$other_to_multinom <- i
+              local_values$removePSA <- n
+            } 
+          }
+        } else {
+          local_values$removePSA <- values$nProbabilistic
+        }
+      }, once = TRUE, ignoreInit = TRUE)
+    })
+  })
+  
+  observe({
+    req(local_values$removePSA)
+    if (is.null(local_values$other_to_multinom)){
+      psa_param1 <- switch (input[[paste0("PSADistrib", values$nProbabilistic)]],
+                            "Normal" = "Mean",
+                            "Lognormal" = "Mean",
+                            "Binomial" = "Prop",
+                            "Gamma" = "Mean",
+                            "Logitnormal" = "Mu",
+                            "Multinomial" = "Nb parameters"
+      )
+      psa_param2 <- switch (input[[paste0("PSADistrib", values$nProbabilistic)]],
+                            "Normal" = "SD",
+                            "Lognormal" = "SD",
+                            "Binomial" = "Size",
+                            "Gamma" = "SD",
+                            "Logitnormal" = "Sigma"
+      )
+      choices <- get_names_SA(input, values)
+      updateSelectizeInput(session, paste0("PSAGlobalParamName", values$nProbabilistic), "Variable name" , choices = choices, selected = character(0))
+      updateSelectizeInput(session, paste0("PSADistrib", values$nProbabilistic), "Distribution", choices = c("Normal", "Lognormal", "Binomial", "Gamma", "Logitnormal", "Multinomial"), selected = character(0))
+      updateNumericInput(session, paste0("PSAParam1", values$nProbabilistic), psa_param1, NA)
+      
+      
+      if (input[[paste0("PSADistrib", values$nProbabilistic)]] != "Multinomial"){
+        updateNumericInput(session, paste0("PSAParam2", values$nProbabilistic), psa_param2, NA)
+      } else {
+        for (i in seq_len(input[[paste0("PSAParam1", values$nProbabilistic)]])){
+          updateTextInput(session, paste_("PSAMultinomName", values$nProbabilistic,i), psa_param1, "")
+          updateNumericInput(session, paste_("PSAMultinomValue", values$nProbabilistic,i), psa_param1, NA)
+        }
+      }
+      local_values$all_updated <- TRUE
+    }
+  })
+  
+  observe({
+    req(local_values$removePSA, local_values$all_updated)
+    if (stringr::str_length(input[[paste0("PSAGlobalParamName", values$nProbabilistic)]]) == 0 & 
+        (input[[paste0("PSADistrib", values$nProbabilistic)]] != "Multinomial" || is.na(input[[paste_("PSAMultinomValue", values$nProbabilistic, 1)]]))){
+      local_values$old_param1 <- NULL
+      local_values$removePSA <- NULL
+      local_values$all_updated <- FALSE
+      isolate(
+        values$nProbabilistic <- ifelse(values$nProbabilistic > 0, values$nProbabilistic - 1, 0)
+      )
+    }
+  })
 
   output$outInit <- renderUI({
     #####
@@ -789,6 +802,11 @@ shinyServer(function(input, output, session) {
       })
     }, quoted = TRUE)
   }
+  
+  
+  observe({
+    print(input$equationName0)
+  })
   
   output$globalParameters <- renderUI({
     tagList(

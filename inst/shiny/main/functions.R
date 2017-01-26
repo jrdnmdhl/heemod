@@ -1,24 +1,16 @@
+# seq_int <- function(from, to){
+#   if (to > 0) 
+#     seq.
+# }
+
 paste_ <- function(...){
   paste(..., sep = "_")
 }
 
-show_DSA_div <- function(input, values, choices, n){
-  var_name <- if (n == 0) "Variable name" else NULL
-  max_val <- if (n == 0) "Minimum value" else NULL
-  min_val <- if (n == 0) "Maximum value" else NULL
-  style_trash <- if(n == 0) "margin-top:25px" else NULL
-  isolate({
-    div(id = paste0("DSA_div", n), class="centerdiv",
-        selectizeInput(paste0("DSAGlobalParamName", n), var_name, choices = choices, selected = ifelse(!is.null(input[[paste0("DSAGlobalParamName", n)]]), input[[paste0("DSAGlobalParamName", n)]], "")),
-        numericInput(paste0("minDSAValue", n), max_val, ifelse(!is.null(input[[paste0("minDSAValue", n)]]), input[[paste0("minDSAValue", n)]], "")),
-        numericInput(paste0("maxDSAValue", n), min_val, ifelse(!is.null(input[[paste0("maxDSAValue", n)]]), input[[paste0("maxDSAValue", n)]], "")),
-        actionLink(paste0("deleteDSA", n), label = NULL, icon = icon("trash-o", class = "fa-2x"), style = style_trash)
-    )
-  })
-}
-
-
 get_names_SA <- function(input, values){
+  compact <- purrr::compact
+  flatten_chr <- purrr::flatten_chr
+  
   equation <- purrr::map(seq_len(values$nEquation)-1, function(i){
     input[[paste0("equationName", i)]]
   }) 
@@ -31,15 +23,15 @@ get_names_SA <- function(input, values){
       if (!is.null(input[[paste0("survivalDistribution", i)]]) && input[[paste0("survivalDistribution", i)]] == "Weibull") paste(input[[paste0("survivalName", i)]], "k")
     )
   })
-  timedep <- purrr::map(0:(values$nTimedep-1), function(i){
+  timedep <- purrr::map(seq_len(values$nTimedep)-1, function(i){
     if (!is.null(input[[paste0("timedepType", i)]])){
       if (input[[paste0("timedepType", i)]] == "constant") {
         input[[paste0("timedepName", i)]]
       }
       else {
         if(!is.null(values[[paste0("nTimedepNC", i)]])){
-          purrr::map(0:values[[paste0("nTimedepNC", i)]], function(j){
-            sprintf("%s (%s-%s)", input[[paste_("timedepName", i)]], input[[paste_("timedepStart", i, j)]], input[[paste_("timedepEnd", i, j)]])
+          purrr::map(seq.int(0, values[[paste0("nTimedepNC", i)]]), function(j){
+            sprintf("%s (%s-%s)", input[[paste0("timedepName", i)]], input[[paste_("timedepStart", i, j)]], input[[paste_("timedepEnd", i, j)]])
           }) %>% compact %>% flatten_chr
         }
       }
@@ -48,9 +40,9 @@ get_names_SA <- function(input, values){
   })
   return(
     c(equation, rgho, survival, timedep) %>% 
-      purrr::compact() %>%
-      purrr::flatten_chr() %>% 
-      sort()
+      compact %>%
+      flatten_chr %>% 
+      sort
     )
 }
 
@@ -277,7 +269,7 @@ show_first <- function(val, FUN, input){
   req(input$nbStates, input$nbStrategies)
   if (val == "SP1")
     req(input$nbStateVariables)
-  for (i in 1:input$nbStates){
+  for (i in seq_len(input$nbStates)){
     req(input[[paste0("stateName", i)]])
   }
   req(input$strategyName1)
@@ -297,10 +289,10 @@ show_next <- function(val, trigger, input, values, FUN){
   if (val == "SP2")
     req(input$nbStateVariables)
   
-  for (i in 1:input$nbStates){
+  for (i in seq_len(input$nbStates)){
     req(input[[paste0("stateName", i)]])
   }
-  for (i in 1:input$nbStrategies){
+  for (i in seq_len(input$nbStrategies)){
     req(input[[paste0("strategyName", i)]])
   }
   input[[trigger]]
@@ -336,11 +328,11 @@ prepare_timedep <- function(n, edit, input, values) {
             tagList(
               column(9, 
                      renderUI({
-                       lapply(0:values[[paste0("nTimedepNC", n)]], function(i){
+                       lapply(seq.int(0, values[[paste0("nTimedepNC", n)]]), function(i){
                          fluidRow(
-                           column(4, textInput(paste_("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepValueNC", n, i)]]), input[[paste0("timedepValueNC", n, i)]], "")))),
-                           column(4, numericInput(paste_("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepStart", n, i)]]), input[[paste0("timedepStart", n, i)]],"")))),
-                           column(4, numericInput(paste_("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste0("timedepEnd", n, i)]]), input[[paste0("timedepEnd", n, i)]], ""))))
+                           column(4, textInput(paste_("timedepValueNC", n, i), NULL, isolate(ifelse(!is.null(input[[paste_("timedepValueNC", n, i)]]), input[[paste_("timedepValueNC", n, i)]], "")))),
+                           column(4, numericInput(paste_("timedepStart", n, i), NULL, isolate(ifelse(!is.null(input[[paste_("timedepStart", n, i)]]), input[[paste_("timedepStart", n, i)]],"")))),
+                           column(4, numericInput(paste_("timedepEnd", n, i), NULL, isolate(ifelse(!is.null(input[[paste_("timedepEnd", n, i)]]), input[[paste_("timedepEnd", n, i)]], ""))))
                          )
                        })
                      })
