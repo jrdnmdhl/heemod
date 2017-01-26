@@ -775,14 +775,17 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  output$plotDSA <- renderPlot({
+  output$plotDSA <- renderUI({
     req(values$nDeterministic > 0)
     req(values$model)
-    
-    values$dsa <- ux_run_dsa(input, values)
-    plot(values$dsa,
-         result = input$dsaPlotResult,
-         type = input$dsaPlotType)
+    tagList(
+      renderPlot({
+        values$dsa <- ux_run_dsa(input, values)
+        plot(values$dsa,
+             result = input$dsaPlotResult,
+             type = input$dsaPlotType)
+      })
+    )
   })
   
   for (module in MODULES){

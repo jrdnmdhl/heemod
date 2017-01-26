@@ -248,7 +248,7 @@ function(request) {
             uiOutput("DSA"),
             uiOutput("outDSA"),
             tags$br(),
-            plotOutput("plotDSA"),
+            uiOutput("plotDSA"),
             tags$br()
           )
         ),
