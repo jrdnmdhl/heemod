@@ -3,17 +3,10 @@
 #' Define a partitioned survival model with progression-free
 #' survival and overall survival.
 #' 
-#' @param pfs,os Either results from 
-#'   [flexsurv::flexsurvreg()] or 
-#'   [define_survival()].
-#' @param state_names named character vector, length 3 or 4.
-#'   State names for progression-free state, progression, 
-#'   (optionally terminal) and death respectively. Elements 
-#'   should be named `"progression_free"`, 
-#'   `"progression"`, (optionally `"terminal"`), 
-#'   and `"death"`. See examples.
-#' @param terminal_state Should a terminal state be 
-#'   included? Only used when state names are not provided.
+#' @param ... Numeric vectors or survival distribution corresponding
+#' to the marginal distributions which partition the model states.  State names
+#' are passed using argument names
+#' @param absorbing_state The name of the absorbing health state
 #' @param cycle_length The value of a Markov cycle in
 #'   absolute time units.
 #'   
@@ -26,19 +19,7 @@
 #' 
 #' define_part_surv(
 #'   pfs = dist_pfs,
-#'   os = dist_os,
-#'   state_names = c(
-#'     progression_free = "A",
-#'     progression = "B",
-#'     terminal = "C",
-#'     death = "D"
-#'   )
-#' )
-#' # identical to:
-#' define_part_surv(
-#'   pfs = dist_pfs,
-#'   os = dist_os,
-#'   terminal_state = TRUE
+#'   os = dist_os
 #' )
 #' 
 define_part_surv <- function(..., absorbing_state = "dead", cycle_length = 1) {
