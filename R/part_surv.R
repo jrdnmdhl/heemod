@@ -41,69 +41,33 @@
 #'   terminal_state = TRUE
 #' )
 #' 
-define_part_surv <- function(pfs, os, state_names,
-                             terminal_state = FALSE,
-                             cycle_length = 1) {
-  
-  if (missing(state_names)) {
-    message("No named state -> generating names.")
-    
-    if (terminal_state) {
-      state_names <- LETTERS[seq_len(4)]
-      names(state_names) <- c(
-        "progression_free",
-        "progression",
-        "terminal",
-        "death"
-      )
-    } else {
-      state_names <- LETTERS[seq_len(3)]
-      names(state_names) <- c(
-        "progression_free",
-        "progression",
-        "death"
-      )
-    }
-  } else if (terminal_state) {
-    warning("Argument 'terminal_state' ignored when state names are given.")
-  }
-  
+define_part_surv <- function(..., absorbing_state = "dead", cycle_length = 1) {
+  dots <- lazyeval::lazy_dots(...)
   define_part_surv_(
-    pfs = lazyeval::lazy_(substitute(pfs), env = parent.frame()),
-    os = lazyeval::lazy_(substitute(os), env = parent.frame()),
-    state_names = state_names,
-    cycle_length = cycle_length)
+    dots,
+    absorbing_state = absorbing_state,
+    cycle_length = cycle_length
+  )
 }
 
 #' @export
 #' @rdname define_part_surv
-define_part_surv_ <- function(pfs, os, state_names,
-                              cycle_length = 1) {
+define_part_surv_ <- function(dots, absorbing_state = "dead", cycle_length = 1) {
   
-  stopifnot(
-    inherits(pfs, "lazy"),
-    inherits(os, "lazy"),
-    
-    length(state_names) %in% 3:4,
-    ! is.null(names(state_names)),
-    all(names(state_names) %in% c(
-      "progression_free",
-      "progression",
-      "terminal",
-      "death"
-    )),
-    ! any(duplicated(names(state_names))),
-    length(cycle_length) %in% 1:2,
-    all(cycle_length > 0)
-  )
+  n_state <- length(dots)
+  states = names(dots)
+  ind <- states == ""
+  states[ind] <- LETTERS[which(ind)]
+  state_names <- LETTERS[seq_len(n_state + 1)]
+  states <- c(states, absorbing_state)
+  names(state_names) <- states
 
   if (length(cycle_length) == 1) {
     cycle_length <- rep(cycle_length, 2)
   }
   
   res <- list(
-    pfs = pfs,
-    os = os,
+    marginals = dots,
     state_names = state_names,
     cycle_length = cycle_length
   )
@@ -120,35 +84,37 @@ get_state_names.part_surv <- function(x) {
 
 eval_transition.part_surv <- function(x, parameters) {
   
-  pfs_dist <- lazyeval::lazy_eval(
-    x$pfs, 
-    data = dplyr::slice(parameters, 1)
-  )
+  n_marginal = length(x$marginals)
   
-  pfs_surv <- compute_surv(
-    pfs_dist,
-    time = parameters$markov_cycle - 1,
-    cycle_length = x$cycle_length[1],
-    type = "surv"
+  marginals <- lapply(
+    seq_len(n_marginal),
+    function(i){
+      mar_eval <- lazyeval::lazy_eval(x$marginals[[i]], data=parameters)
+      if(!is.numeric(mar_eval)) {
+          # If a survival distribution is given, compute survival
+          ret <- compute_surv(
+            mar_eval,
+            time = parameters$markov_cycle - 1,
+            cycle_length =  x$cycle_length[i],
+            type = "surv"
+          )
+      } else {
+        # If a numeric is given, treat it as pre-computed survival
+        ret <- mar_eval
+      }
+    }
   )
-  
-  os_dist <- lazyeval::lazy_eval(
-    x$os, 
-    data = dplyr::slice(parameters, 1)
+  adj_marginals = rev(
+    Reduce(
+      function(a, b) pmin(a, b),
+      rev(marginals),
+      accumulate = TRUE
+    )
   )
-  
-  os_surv <- compute_surv(
-    os_dist,
-    time = parameters$markov_cycle - 1,
-    cycle_length = x$cycle_length[2],
-    type = "surv"
-  )
-  
   
   structure(
     list(
-      pfs_surv = pfs_surv,
-      os_surv = os_surv,
+      marginals = adj_marginals,
       state_names = x$state_names
     ),
     class = "eval_part_surv")
@@ -157,43 +123,24 @@ eval_transition.part_surv <- function(x, parameters) {
 compute_counts.eval_part_surv <- function(x, init,
                                           method, inflow) {
   
-  stopifnot(
-    length(x$state_names) %in% 3:4,
-    all(names(x$state_names) %in% c(
-      "progression_free",
-      "progression",
-      "terminal",
-      "death"
-    )),
-    ! any(duplicated(names(x$state_names))),
-    length(init) == length(x$state_names),
-    all(init[-1] == 0)
+  res <- Reduce(
+    function(a, b) {
+      aMat <- as.matrix(a)
+      nColA <- ncol(aMat)
+      cbind(aMat, b - rowSums(aMat))
+    },
+    x$marginals
   )
   
-  if (method != "end") {
-    warning("Currently only counting method 'end' is supported with partitioned survival models. ",
-            "Option 'method' is ignored.")
-  }
+  res <- as.data.frame(cbind(res, 1 - rowSums(res)))
   
-  res <- data.frame(
-    progression_free = x$pfs_surv,
-    progression      = x$os_surv - x$pfs_surv, 
-    death            = 1 - x$os_surv
-  )
-  
-  if (length(x$state_names) == 4) {
-    res$terminal <- diff(c(0, res$death))
-    res$death <- c(0, res$death[-nrow(res)])
-  }
+  colnames(res) <- x$state_names
   
   if (any(res < 0)) {
     stop("Negative counts in partitioned model.")
   }
   
   res <- res * sum(init)
-  
-  names(res) <- x$state_names[names(res)]
-  res <- res[x$state_names]
   
   structure(res, class = c("cycle_counts", class(res)))
 }
