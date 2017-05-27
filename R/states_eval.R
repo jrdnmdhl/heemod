@@ -12,15 +12,23 @@
 #' @keywords internal
 eval_state_list <- function(x, parameters) {
   
+  
   f <- function(x) {
+    state_values <- list(
+      state_time = parameters$state_time,
+      model_time = parameters$model_time
+    )
     x <- discount_hack(x)
     
     # update calls to dispatch_strategy()
     x <- dispatch_strategy_hack(x)
     
     # bottleneck!
-    dplyr::mutate_(parameters, .dots = x)[c("markov_cycle",
-                                            names(x))]
+    for(i in seq_len(length(x))) {
+      state_values[[names(x)[i]]] <- lazyeval::lazy_eval(x[[i]], data = parameters)
+    }
+    state_values <- do.call(tibble::tibble, state_values)
+    state_values
   }
   
   res <- lapply(x, f)

@@ -39,31 +39,44 @@ eval_strategy <- function(strategy, parameters, cycles,
     length(cycles) == 1
   )
   
-  ## expand states if necessary, and retrieve values.   
-  ##  If no expansion, then it returns the same values
-  expanded <- expand_if_necessary(
-    strategy      = strategy,
-    parameters    = parameters, 
-    cycles        = cycles,
-    init          = init,
-    method        = method,
-    expand_limit  = expand_limit,
-    inflow        = inflow,
-    strategy_name = strategy_name)
+  states <- get_states(strategy)
+  n_states = length(states)
+  transitions <- get_transition(strategy)
   
-  uneval_states <- expanded$uneval_states
-  uneval_transition <- expanded$uneval_transition
-  init <- expanded$init
-  inflow <- expanded$inflow
-  starting_values <- expanded$starting_values
-  n_indiv <- expanded$n_indiv
-  parameters <- expanded$parameters
-  actually_expanded_something <- expanded$actually_expanded_something
+  # Identify which states need to be expanded
+  i_params <- interpolate(parameters)
+  i_state <- interpolate(states, more = parameters)
+  i_trans <- interpolate(transitions, more = parameters)
+  state_td <- has_state_time(i_state)
+  mat_td <- has_state_time(i_trans) %>%
+    matrix(nrow = n_states, ncol = n_states, byrow = TRUE) %>%
+    apply(1, any)
+  to_expand <- state_td | mat_td
+  expand_table <- tibble::tibble(
+    state = attr(states, "names"),
+    expand = to_expand
+  )
   
-  states <- eval_state_list(uneval_states, parameters)
+  # Evaluate parameters
+  e_parameters <- eval_parameters(
+    parameters,
+    cycles = cycles,
+    strategy_name = strategy_name,
+    max_state_time = max(expand_limit)
+  )
   
-  transition <- eval_transition(uneval_transition,
-                                parameters)
+  # Evaluate States
+  e_states <- eval_state_list(
+    get_states(strategy),
+    e_parameters
+  )
+  
+  # Evaluate Transitions
+  e_transition <- eval_transition(
+    get_transition(strategy),
+    e_parameters,
+    expand_table
+  )
   
   count_table <- compute_counts(
     x = transition,
@@ -261,41 +274,32 @@ expand_if_necessary <- function(strategy, parameters,
   uneval_states <- get_states(strategy)
   to_expand <- NULL
   
+  # Interpolate to make it easier to track state time dependency
   i_parameters <- interpolate(parameters)
+  i_uneval_transition <- interpolate(
+    uneval_transition,
+    more = as_expr_list(i_parameters)
+  )
+  i_uneval_states <- interpolate(
+    uneval_states,
+    more = as_expr_list(i_parameters)
+  )
   
-  i_uneval_transition <- interpolate(uneval_transition,
-                                     more = as_expr_list(i_parameters))
-  
-  i_uneval_states <- interpolate(uneval_states,
-                                 more = as_expr_list(i_parameters))
-  
-  
+  # Determine which components have state-time dependency
+  td_param <- has_state_time(i_parameters)
   td_tm <- has_state_time(i_uneval_transition)
-  
   td_st <- has_state_time(i_uneval_states)
   
   # no expansion if
-  expand <- any(c(td_tm, td_st))
-  
-  # because parameters are deleted if expand
-  old_parameters <- parameters
+  expand <- any(c(td_param, td_tm, td_st))
   
   if (expand) {
     if (inherits(uneval_transition, "part_surv")) {
       stop("Cannot use 'state_time' with partitionned survival.")
     }
     
-    uneval_transition <- i_uneval_transition
-    uneval_states <- i_uneval_states
-    
-    # parameters not needed anymore because of interp
-    parameters <- define_parameters()
-    
     # from cells to cols
-    td_tm <- td_tm %>%
-      matrix(nrow = get_matrix_order(uneval_transition),
-             byrow = TRUE) %>%
-      apply(1, any)
+    td_tm <- td_tm %>% apply(1, any)
     
     to_expand <- sort(unique(c(
       get_state_names(uneval_transition)[td_tm],
@@ -333,22 +337,10 @@ expand_if_necessary <- function(strategy, parameters,
   
   parameters <- eval_parameters(parameters,
                                 cycles = cycles,
-                                strategy_name = strategy_name)
+                                strategy_name = strategy_name,
+                                max_state_time = max(expand_limit))
   
-  # to retain values in case of expansion
-  if (expand) {
-    complete_parameters <- eval_parameters(structure(
-      c(lazyeval::lazy_dots(state_time = 1),
-        old_parameters),
-      class = class(old_parameters)
-    ),
-    cycles = 1,
-    strategy_name = strategy_name)
-  } else {
-    complete_parameters <- parameters[1,]
-  }
-  
-  e_init <- unlist(eval_init(x = init, parameters[1,]))
+  e_init <- unlist(eval_init(x = init, parameters))
   e_inflow <- eval_inflow(x = inflow, parameters)
   e_starting_values <- unlist(
     eval_starting_values(
@@ -380,5 +372,6 @@ expand_if_necessary <- function(strategy, parameters,
     complete_parameters = complete_parameters,
     actually_expanded_something = expand,
     expanded_states = to_expand,
-    expansion_cols = exp_cols)
+    expansion_cols = exp_cols
+  )
 }

@@ -48,12 +48,20 @@ define_parameters <- function(...) {
 #' @rdname define_parameters
 #' @export
 define_parameters_ <- function(.dots) {
-  
+  n_par <- length(.dots)
+  if (n_par > 0) {
+    .env <- new.env(parent = .dots[[1]]$env)
+  } else {
+    .env <- new.env(parent=globalenv())
+  }
+  for(i in seq_len(n_par)) {
+    .dots[[i]]$env <- .env
+  }
   if (length(.dots)){
     check_names(names(.dots))
   }
   structure(.dots,
-            class = c("uneval_parameters", class(.dots)))
+            class = c("uneval_parameters", class(.dots)), env = .env)
 }
 
 #' Return parameters names

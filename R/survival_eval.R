@@ -13,7 +13,6 @@
 check_cycle_inputs <- function(cycle, cycle_length) {
   
   stopifnot(
-    all(cycle == seq(from = min(cycle), to = max(cycle), by = 1)),
     all(round(cycle, 0) == cycle),
     length(cycle) >= 1,
     !any(cycle < 0),
