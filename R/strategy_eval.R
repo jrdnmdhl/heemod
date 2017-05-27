@@ -102,27 +102,19 @@ eval_strategy <- function(strategy, parameters, cycles,
   ) %>% 
     correct_counts(method = method)
   
-  values <- compute_values(states, count_table)
-  values[1, names(starting_values)] <- values[1, names(starting_values)] +
-    starting_values * n_indiv
+  values <- compute_values(e_states, count_table)
   
-  if (actually_expanded_something) {
-    for (st in expanded$expanded_states) {
-      count_table[[st]] <- rowSums(count_table[expanded$expansion_cols[[st]]])
-      count_table <- count_table[- which(names(count_table) %in% expanded$expansion_cols[[st]])]
-    }
-  }
+  n_indiv <- sum(e_init[1, ], e_inflow[1, ])
   
   structure(
     list(
-      parameters = parameters,
-      complete_parameters = expanded$complete_parameters,
-      transition = transition,
-      states = states,
+      parameters = e_parameters,
+      transition = e_transition,
+      states = e_states,
       counts = count_table,
       values = values,
-      e_init = init,
-      e_inflow = inflow,
+      init = e_init,
+      inflow = e_inflow,
       n_indiv = n_indiv,
       cycles = cycles,
       expand_limit = expand_limit
@@ -244,34 +236,10 @@ compute_counts.eval_matrix <- function(x, init, inflow, ...) {
 ## slightly harder to read than the original version, but much faster
 ## identical results to within a little bit of numerical noise
 compute_values <- function(states, counts) {
-  states_names <- get_state_names(states)
-  state_values_names <- get_state_value_names(states)
-  num_cycles <- nrow(counts)
-
-  ## combine the list of states into a single large array
-  dims_array_1 <- c(
-    num_cycles,
-    length(state_values_names),
-    length(states_names))
   
-  dims_array_2 <- dims_array_1 + c(0, 1, 0)
-  
-  state_val_array <- array(unlist(states), dim = dims_array_2)
+  lapply(states, function(var){
+    rowSums(var * counts)
+  }) %>%
+    do.call(tibble::tibble, .)
 
-  ## get rid of markov_cycle
-  mc_col <- match("markov_cycle", names(states[[1]]))
-  state_val_array <- state_val_array[, -mc_col, , drop = FALSE]
-
-  ## put counts into a similar large array
-  counts_mat <- array(unlist(counts[, states_names]),
-                      dim = dims_array_1[c(1, 3, 2)])
-  counts_mat <- aperm(counts_mat, c(1, 3, 2))
-
-  # multiply, sum, and add markov_cycle back in
-  vals_x_counts <- state_val_array * counts_mat
-  wtd_sums <- rowSums(vals_x_counts, dims = 2)
-  res <- data.frame(markov_cycle = states[[1]]$markov_cycle, wtd_sums)
-  names(res)[-1] <- state_values_names
-
-  res
 }

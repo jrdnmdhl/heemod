@@ -12,36 +12,80 @@
 #' @keywords internal
 eval_state_list <- function(x, parameters, expand) {
   
+  # Set up time values for which state values will be evaluated
+  time_values <- list(
+    state_time = parameters$state_time,
+    model_time = parameters$model_time
+  )
   
-  f <- function(x) {
-    state_values <- list(
-      state_time = parameters$state_time,
-      model_time = parameters$model_time
-    )
-    x <- discount_hack(x)
+  # Set up empty tibble for variable values
+  vars_df <- tibble::tibble()
+  
+  # Get number of states and names
+  n_states <- length(x)
+  state_names <- names(x)
+  
+  # Loop through variables in each state and add to table
+  for(i in seq_len(n_states)) {
     
-    # update calls to dispatch_strategy()
-    x <- dispatch_strategy_hack(x)
-    
-    # bottleneck!
-    for(i in seq_len(length(x))) {
-      state_values[[names(x)[i]]] <- lazyeval::lazy_eval(x[[i]], data = parameters)
+    # Get number of variables and names
+    n_var <- length(x[[i]])
+    var_names <- names(x[[i]])
+    for(j in seq_len(n_var)) {
+      
+      # Evaluate and add to table
+      state_values <- time_values
+      state_values$.state <- state_names[i]
+      state_values$.name <- var_names[j]
+      state_values$.value <- lazyeval::lazy_eval(
+        x[[i]][[j]],
+        data = parameters
+      )
+      vars_df <- rbind(
+        vars_df,
+        do.call(tibble::tibble, state_values)
+      )
+      
     }
-    state_values <- do.call(tibble::tibble, state_values)
-    state_values
   }
   
-  res <- lapply(x, f)
+  # Handle expansion
+  vars_df <- vars_df %>%
+    dplyr::left_join(expand, by = c(".state" =  "state")) %>%
+    dplyr::filter(state_time <= limit) %>%
+    dplyr::mutate(
+      .full_state = ifelse(expand, paste0(".", .state, "_", state_time), .state)
+    )
   
-  structure(res,
-            class = c("eval_state_list", class(res)))
+  
+  
+  # Recast to matrix
+  all_var_names <- unique(vars_df$.name)
+  all_state_names <- unique(vars_df$.full_state)
+  var_mat <- vars_df %>%
+    reshape2::acast(
+      factor(.name, levels = all_var_names) ~
+        model_time ~
+        factor(.full_state, levels = all_state_names),
+      value.var = ".value",
+      fill = 0
+    )
+  
+  # Split into named list by variable
+  var_mat_list <- split_along_dim(var_mat, 1)
+  names(var_mat_list) <- all_var_names
+  
+  structure(
+    var_mat_list,
+    class = c("eval_state_list", class(var_mat_list))
+  )
 }
 
 eval_single_state <- function(x, parameters, expand) {
   
   
   # Get number of variables and state names
-  n_state <- nrow(expand)
+  n_var <- nrow(expand)
   state_names <- names(x)
   
   # Start a blank df

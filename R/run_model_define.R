@@ -226,7 +226,7 @@ get_state_value_names.run_model <- function(x) {
 
 get_total_state_values <- function(x) {
   # faster than as.data.frame or dplyr::as_data_frame
-  res <- as.list(colSums((x$values)[- 1]))
+  res <- as.list(colSums((x$values)))
   class(res) <- "data.frame"
   attr(res, "row.names") <- c(NA, -1)
   res$.n_indiv <- get_n_indiv(x)
