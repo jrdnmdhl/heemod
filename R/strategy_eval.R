@@ -54,7 +54,8 @@ eval_strategy <- function(strategy, parameters, cycles,
   to_expand <- state_td | mat_td
   expand_table <- tibble::tibble(
     state = attr(states, "names"),
-    expand = to_expand
+    expand = to_expand,
+    limit = ifelse(to_expand, expand_limit, 1)
   )
   
   # Evaluate parameters
@@ -65,10 +66,25 @@ eval_strategy <- function(strategy, parameters, cycles,
     max_state_time = max(expand_limit)
   )
   
+  # Inits
+  e_init <- eval_init(
+    init,
+    e_parameters,
+    expand_table
+  )
+  
+  # Inflow
+  e_inflow <- eval_inflow(
+    inflow,
+    e_parameters,
+    expand_table
+  )
+  
   # Evaluate States
   e_states <- eval_state_list(
     get_states(strategy),
-    e_parameters
+    e_parameters,
+    expand_table
   )
   
   # Evaluate Transitions
@@ -79,9 +95,10 @@ eval_strategy <- function(strategy, parameters, cycles,
   )
   
   count_table <- compute_counts(
-    x = transition,
-    init = init,
-    inflow = inflow
+    x = e_transition,
+    init = e_init,
+    inflow = e_inflow,
+    expand = expand_table
   ) %>% 
     correct_counts(method = method)
   
@@ -167,7 +184,7 @@ compute_counts <- function(x, ...) {
 #' @export
 compute_counts.eval_matrix <- function(x, init, inflow, ...) {
   
-  if (! length(init) == get_matrix_order(x)) {
+  if (! ncol(init) == get_matrix_order(x)) {
     stop(sprintf(
       "Length of 'init' vector (%i) differs from the number of states (%i).",
       length(init),
@@ -175,10 +192,10 @@ compute_counts.eval_matrix <- function(x, init, inflow, ...) {
     ))
   }
   
-  if (! length(inflow) == get_matrix_order(x)) {
+  if (! ncol(inflow) == get_matrix_order(x)) {
     stop(sprintf(
-      "Length of 'inflow' vector (%i) differs from the number of states (%i).",
-      length(inflow),
+      "Number of columns of 'inflow' matrix (%i) differs from the number of states (%i).",
+      ncol(inflow),
       get_matrix_order(x)
     ))
   }
@@ -186,6 +203,7 @@ compute_counts.eval_matrix <- function(x, init, inflow, ...) {
   i <- 0
   add_and_mult <- function(x, y) {
     i <<- i + 1
+    print(i)
     (x + unlist(inflow[i, ])) %*% y
   }
   
@@ -206,7 +224,7 @@ compute_counts.eval_matrix <- function(x, init, inflow, ...) {
     )
   )
   
-  colnames(res) <- get_state_names(x)
+  colnames(res) <- colnames(init)
   
   structure(res, class = c("cycle_counts", class(res)))
 }
@@ -256,122 +274,4 @@ compute_values <- function(states, counts) {
   names(res)[-1] <- state_values_names
 
   res
-}
-
-#' Expand States and Transition
-#' 
-#' @inherit eval_strategy
-#'   
-#' @return Expanded states, transitions, input and inflow 
-#'   (if they require expansion; otherwise return inputs
-#'   unchanged).
-#'   
-expand_if_necessary <- function(strategy, parameters, 
-                                cycles, init, method,
-                                expand_limit, inflow,
-                                strategy_name) {
-  uneval_transition <- get_transition(strategy)
-  uneval_states <- get_states(strategy)
-  to_expand <- NULL
-  
-  # Interpolate to make it easier to track state time dependency
-  i_parameters <- interpolate(parameters)
-  i_uneval_transition <- interpolate(
-    uneval_transition,
-    more = as_expr_list(i_parameters)
-  )
-  i_uneval_states <- interpolate(
-    uneval_states,
-    more = as_expr_list(i_parameters)
-  )
-  
-  # Determine which components have state-time dependency
-  td_param <- has_state_time(i_parameters)
-  td_tm <- has_state_time(i_uneval_transition)
-  td_st <- has_state_time(i_uneval_states)
-  
-  # no expansion if
-  expand <- any(c(td_param, td_tm, td_st))
-  
-  if (expand) {
-    if (inherits(uneval_transition, "part_surv")) {
-      stop("Cannot use 'state_time' with partitionned survival.")
-    }
-    
-    # from cells to cols
-    td_tm <- td_tm %>% apply(1, any)
-    
-    to_expand <- sort(unique(c(
-      get_state_names(uneval_transition)[td_tm],
-      get_state_names(uneval_states)[td_st]
-    )))
-    
-    message(
-      sprintf(
-        "%s: detected use of 'state_time', expanding state%s: %s.",
-        strategy_name,
-        plur(length(to_expand)),
-        paste(to_expand, collapse = ", ")
-      )
-    )
-    
-    for (st in to_expand) {
-      init <- expand_state(init, state_name = st, cycles = expand_limit[st])
-      
-      inflow <- expand_state(inflow, state_name = st, cycles = expand_limit[st])
-    }
-    
-    for (st in to_expand) {
-      uneval_transition <- expand_state(
-        x = uneval_transition,
-        state_pos = which(get_state_names(uneval_transition) == st),
-        state_name = st,
-        cycles = expand_limit[st]
-      )
-      
-      uneval_states <- expand_state(x = uneval_states,
-                                    state_name = st,
-                                    cycles = expand_limit[st])
-    }
-  }
-  
-  parameters <- eval_parameters(parameters,
-                                cycles = cycles,
-                                strategy_name = strategy_name,
-                                max_state_time = max(expand_limit))
-  
-  e_init <- unlist(eval_init(x = init, parameters))
-  e_inflow <- eval_inflow(x = inflow, parameters)
-  e_starting_values <- unlist(
-    eval_starting_values(
-      x = strategy$starting_values,
-      parameters[1, ]))
-  n_indiv <- sum(e_init, unlist(e_inflow))
-  
-  if (any(is.na(e_init)) || any(is.na(e_inflow)) || any(is.na(e_starting_values))) {
-    stop("Missing values not allowed in 'init', 'inflow' or 'starting values'.")
-  }
-  
-  if (!any(e_init > 0)) {
-    stop("At least one init count must be > 0.")
-  }
-  
-  exp_cols <- list()
-  for (st in to_expand) {
-    exp_cols[[st]] <- sprintf(".%s_%i", st, seq_len(expand_limit[st] + 1))
-  }
-  
-  list(
-    uneval_transition = uneval_transition,
-    uneval_states = uneval_states,
-    init = e_init,
-    inflow = e_inflow,
-    starting_values = e_starting_values,
-    n_indiv = n_indiv,
-    parameters = parameters,
-    complete_parameters = complete_parameters,
-    actually_expanded_something = expand,
-    expanded_states = to_expand,
-    expansion_cols = exp_cols
-  )
 }

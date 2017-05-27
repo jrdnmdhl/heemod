@@ -49,14 +49,77 @@ eval_parameters <- function(x, cycles = 1,
   )
 }
 
-eval_init <- function(x, parameters) {
-  to_keep <- names(x)
-  init_df <- tibble::tibble(.rowid=1)
-  if (length(to_keep)) {
-    with(parameters, dplyr::mutate_(init_df, .dots = x))[to_keep]
-  } else {
-    tibble::tibble()
+eval_init <- function(x, parameters, expand) {
+  
+  # Get number of states and state names
+  n_state <- nrow(expand)
+  state_names <- names(x)
+  
+  # Start a blank df
+  inits_df <- tibble::tibble()
+  
+  # Evaluate initial values
+  for(i in seq_len(n_state)) {
+    inits_df <- rbind(
+      inits_df,
+      tibble::tibble(
+        .name = state_names[i],
+        model_time = parameters$model_time,
+        state_time = parameters$state_time,
+        .value = lazyeval::lazy_eval(x[[i]],data = parameters)
+      )
+    )
   }
+  
+  # Expand and Transpose
+  inits_df <- inits_df %>%
+    left_join(expand, by = c(".name" = "state")) %>%
+    dplyr::filter(state_time <= limit, model_time == min(model_time)) %>%
+    dplyr::mutate(
+      .full_name = ifelse(
+        expand,
+        paste0(".", .name, "_", state_time),
+        .name
+      ),
+      .value = ifelse(state_time == 1, .value, 0)
+    ) %>%
+    reshape2::acast(1~factor(.full_name, levels=unique(.full_name)), value.var = ".value")
 }
 
-eval_starting_values <- eval_inflow <- eval_init
+eval_inflow <- function(x, parameters, expand) {
+  
+  # Get number of states and state names
+  n_state <- nrow(expand)
+  state_names <- names(x)
+  
+  # Start a blank df
+  inflow_df <- tibble::tibble()
+  
+  # Evaluate initial values
+  for(i in seq_len(n_state)) {
+    inflow_df <- rbind(
+      inflow_df,
+      tibble::tibble(
+        .name = state_names[i],
+        model_time = parameters$model_time,
+        state_time = parameters$state_time,
+        .value = lazyeval::lazy_eval(x[[i]],data = parameters)
+      )
+    )
+  }
+  
+  # Expand and Transpose
+  inflow_df <- inflow_df %>%
+    left_join(expand, by = c(".name" = "state")) %>%
+    dplyr::filter(state_time <= limit) %>%
+    dplyr::mutate(
+      .full_name = ifelse(
+        expand,
+        paste0(".", .name, "_", state_time),
+        .name
+      ),
+      .value = ifelse(state_time == 1, .value, 0)
+    ) %>%
+    reshape2::acast(model_time~factor(.full_name, levels=unique(.full_name)), value.var = ".value")
+    
+}

@@ -124,7 +124,7 @@ eval_transition.uneval_matrix <- function(x, parameters, expand) {
   # requiring expansion are identified
   trans_table <- trans_table %>%
     dplyr::left_join(
-      expand %>% dplyr::transmute(state=state, .expand_from = expand),
+      expand %>% dplyr::transmute(state=state, .expand_from = expand, limit = limit),
       by = c(".from" = "state")
     ) %>%
     dplyr::left_join(
@@ -134,7 +134,7 @@ eval_transition.uneval_matrix <- function(x, parameters, expand) {
   
   # Handle transitions for expanded states
   trans_table <- trans_table %>%
-    dplyr::filter(.expand_from | state_time == 1) %>%
+    dplyr::filter(state_time <= limit) %>%
     dplyr::group_by(.from, .to, model_time) %>%
     dplyr::mutate(
       .from_expanded = ifelse(

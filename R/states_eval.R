@@ -10,7 +10,7 @@
 #'   value and a line per cycle.
 #'   
 #' @keywords internal
-eval_state_list <- function(x, parameters) {
+eval_state_list <- function(x, parameters, expand) {
   
   
   f <- function(x) {
@@ -35,6 +35,45 @@ eval_state_list <- function(x, parameters) {
   
   structure(res,
             class = c("eval_state_list", class(res)))
+}
+
+eval_single_state <- function(x, parameters, expand) {
+  
+  
+  # Get number of variables and state names
+  n_state <- nrow(expand)
+  state_names <- names(x)
+  
+  # Start a blank df
+  inflow_df <- tibble::tibble()
+  
+  # Evaluate initial values
+  for(i in seq_len(n_state)) {
+    inflow_df <- rbind(
+      inflow_df,
+      tibble::tibble(
+        .name = state_names[i],
+        model_time = parameters$model_time,
+        state_time = parameters$state_time,
+        .value = lazyeval::lazy_eval(x[[i]],data = parameters)
+      )
+    )
+  }
+  
+  # Expand and Transpose
+  inflow_df <- inflow_df %>%
+    left_join(expand, by = c(".name" = "state")) %>%
+    dplyr::filter(state_time <= limit) %>%
+    dplyr::mutate(
+      .full_name = ifelse(
+        expand,
+        paste0(".", .name, "_", state_time),
+        .name
+      ),
+      .value = ifelse(state_time == 1, .value, 0)
+    ) %>%
+    reshape2::acast(model_time~factor(.full_name, levels=unique(.full_name)), value.var = ".value")
+  
 }
 
 get_state_value_names.eval_state_list <- function(x){
